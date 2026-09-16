@@ -1,235 +1,8 @@
 // scripts/export-csv.ts
 import { createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-// src/data/levels.ts
-var LEVELS = [
-  {
-    id: 1,
-    title: "Little Stars",
-    ages: "3\u20135 years",
-    cefr: "Pre-A1",
-    tagline: "Colors, animals, numbers, and first words.",
-    focus: ["First words", "Colors & animals", "Counting", "Hello & thank you"],
-    tutor: {
-      name: "Benny Bear",
-      role: "Your playful English friend",
-      avatar: "\u{1F43B}",
-      greeting: "Hi, friend! I am Benny Bear. Let us play with English words! Listen, look, and pick one answer.",
-      praise: [
-        "Yes! Great job!",
-        "Yay! You got it!",
-        "Wow! Super star!",
-        "Yes! I am so happy!",
-        "Good! Let\u2019s do the next one!"
-      ],
-      retry: [
-        "Almost! Try this: look again.",
-        "Good try! The right one is this.",
-        "Nice try! Let\u2019s learn it together.",
-        "That\u2019s okay! Now we know the answer."
-      ],
-      next: ["Next one!", "Let\u2019s play again!", "One more word!", "Ready? Here we go!"]
-    },
-    theme: {
-      bg: "#fff4e8",
-      bg2: "#ffe0f0",
-      accent: "#ff6b9d",
-      accent2: "#5ec8f0",
-      ink: "#4a2c3a",
-      card: "#ffffff",
-      bubble: "#fff8f0",
-      userBubble: "#ffe3ef"
-    }
-  },
-  {
-    id: 2,
-    title: "Bright Starters",
-    ages: "6\u20138 years",
-    cefr: "A1",
-    tagline: "School, family, simple sentences, and daily talk.",
-    focus: ["Simple sentences", "School words", "I like / I can", "Days & weather"],
-    tutor: {
-      name: "Miss Pip",
-      role: "Cheerful classroom tutor",
-      avatar: "\u{1F426}",
-      greeting: "Hello! I am Miss Pip. We will chat in easy English. Read, listen, and choose the best answer.",
-      praise: [
-        "Excellent! That\u2019s right.",
-        "Well done! You read that carefully.",
-        "Yes! Super work!",
-        "Perfect! Your English is growing."
-      ],
-      retry: [
-        "Good try. Let\u2019s look at the correct sentence.",
-        "Not quite. Here is a better choice.",
-        "Almost! Remember this one.",
-        "That\u2019s okay. English takes practice!"
-      ],
-      next: ["Next question!", "Let\u2019s keep going!", "Ready for another?", "Here is a new one!"]
-    },
-    theme: {
-      bg: "#e8f7ff",
-      bg2: "#fff6d8",
-      accent: "#219ebc",
-      accent2: "#ffb703",
-      ink: "#12344a",
-      card: "#ffffff",
-      bubble: "#f3fbff",
-      userBubble: "#fff3c9"
-    }
-  },
-  {
-    id: 3,
-    title: "Word Explorers",
-    ages: "9\u201310 years",
-    cefr: "A1\u2013A2",
-    tagline: "Past tense, comparatives, and short stories.",
-    focus: ["Past simple", "Comparatives", "Why / because", "Short reading"],
-    tutor: {
-      name: "Coach Sam",
-      role: "Story and grammar coach",
-      avatar: "\u{1F98A}",
-      greeting: "Hey there! I\u2019m Coach Sam. We\u2019ll read short stories and pick smart answers. You\u2019ve got this!",
-      praise: [
-        "That\u2019s the one! Sharp thinking.",
-        "Yes \u2014 you understood the story.",
-        "Great grammar choice!",
-        "Nice work. That was a tricky one."
-      ],
-      retry: [
-        "Close! Check the verb tense again.",
-        "Not this time. Let\u2019s look at the clue in the sentence.",
-        "Good effort. The story points to another answer.",
-        "Remember: look for because, yesterday, and than."
-      ],
-      next: ["On to the next story!", "Another challenge!", "Let\u2019s keep exploring!", "Ready?"]
-    },
-    theme: {
-      bg: "#e8f6ef",
-      bg2: "#fff3d6",
-      accent: "#2a9d8f",
-      accent2: "#e9c46a",
-      ink: "#1b3d36",
-      card: "#ffffff",
-      bubble: "#f2fbf6",
-      userBubble: "#fff6dd"
-    }
-  },
-  {
-    id: 4,
-    title: "Fluent Builders",
-    ages: "11\u201312 years",
-    cefr: "A2\u2013B1",
-    tagline: "Future plans, conditionals, and real conversations.",
-    focus: ["Will / going to", "First conditional", "Phrasal verbs", "Opinions"],
-    tutor: {
-      name: "Ms. Rivera",
-      role: "Middle-school English mentor",
-      avatar: "\u{1F989}",
-      greeting: "Welcome. I\u2019m Ms. Rivera. We\u2019ll practice natural English: plans, reasons, and conversations. Choose the most natural answer.",
-      praise: [
-        "Exactly. That\u2019s natural English.",
-        "Well reasoned. You used the context well.",
-        "Yes \u2014 that conditional is correct.",
-        "Strong choice. You\u2019re sounding more fluent."
-      ],
-      retry: [
-        "Not the most natural option. Here\u2019s why.",
-        "Almost. Watch the verb form after if / will.",
-        "Good thinking, but another phrase fits better.",
-        "Let\u2019s compare the options more carefully."
-      ],
-      next: ["Next conversation.", "Let\u2019s continue.", "Another one.", "Keep going."]
-    },
-    theme: {
-      bg: "#eef0ff",
-      bg2: "#ffe9d6",
-      accent: "#5b5f97",
-      accent2: "#ff9f1c",
-      ink: "#1e1f3a",
-      card: "#ffffff",
-      bubble: "#f5f6ff",
-      userBubble: "#ffecd9"
-    }
-  },
-  {
-    id: 5,
-    title: "Teen Talk",
-    ages: "13\u201315 years",
-    cefr: "B1\u2013B2",
-    tagline: "Idioms, opinions, academic words, and real-life chat.",
-    focus: ["Idioms", "Passive voice", "Reported speech", "Teen topics"],
-    tutor: {
-      name: "Alex",
-      role: "Teen English coach",
-      avatar: "\u{1F60E}",
-      greeting: "Hey! I'm Alex. We'll chat like real people \u2014 school, hobbies, news, and stronger grammar. Pick the answer that sounds right.",
-      praise: [
-        "Nailed it. That\u2019s how a fluent speaker would say it.",
-        "Yes. You caught the idiom.",
-        "Solid. That register fits the situation.",
-        "Nice \u2014 you understood the implied meaning."
-      ],
-      retry: [
-        "Not quite. In this context, another phrase is more natural.",
-        "Close, but the grammar doesn\u2019t match the time frame.",
-        "That option is understandable, but not the best English here.",
-        "Let\u2019s unpack why the other choice works better."
-      ],
-      next: ["Let's keep rolling.", "Next one.", "Another scenario.", "Ready for the next?"]
-    },
-    theme: {
-      bg: "#0f172a",
-      bg2: "#134e4a",
-      accent: "#2dd4bf",
-      accent2: "#f59e0b",
-      ink: "#e2e8f0",
-      card: "#111827",
-      bubble: "#1e293b",
-      userBubble: "#134e4a"
-    }
-  },
-  {
-    id: 6,
-    title: "Pro English",
-    ages: "15+ years",
-    cefr: "B2\u2013C1",
-    tagline: "Advanced grammar, collocations, academic and workplace English.",
-    focus: ["Collocations", "Register", "Nuance", "Academic writing"],
-    tutor: {
-      name: "Dr. Morgan",
-      role: "Advanced English coach",
-      avatar: "\u{1F393}",
-      greeting: "Welcome. I\u2019m Dr. Morgan. This level trains precise, adult English \u2014 collocations, tone, and academic choices. Select the best option, not merely a possible one.",
-      praise: [
-        "Correct. That is the most precise choice.",
-        "Yes. The collocation is idiomatic.",
-        "Well judged. The register matches the context.",
-        "Excellent. You distinguished a subtle contrast."
-      ],
-      retry: [
-        "Understandable, but not idiomatic. The target collocation is different.",
-        "The meaning is close, yet the register is off.",
-        "A learner might choose that; a proficient speaker would not.",
-        "Re-read the cue: one option is clearly stronger."
-      ],
-      next: ["Continue.", "Next item.", "Another passage.", "Proceed."]
-    },
-    theme: {
-      bg: "#020617",
-      bg2: "#0b3b5a",
-      accent: "#38bdf8",
-      accent2: "#a78bfa",
-      ink: "#e2e8f0",
-      card: "#0b1220",
-      bubble: "#111827",
-      userBubble: "#0f3a4d"
-    }
-  }
-];
 
 // src/types.ts
 var BANK_SIZE = 1e5;
@@ -1910,24 +1683,6 @@ function generateQuestion(level, id) {
 // scripts/export-csv.ts
 var root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 var outDir = path.join(root, "csv");
-var HEADER = [
-  "question_id",
-  "level",
-  "ages",
-  "tutor",
-  "skill",
-  "passage",
-  "prompt",
-  "answer_a",
-  "answer_b",
-  "answer_c",
-  "answer_d",
-  "answer_e",
-  "correct_letter",
-  "correct_answer",
-  "correct_index",
-  "explanation"
-];
 var FILES = [
   { level: 1, file: "level-1-ages-3-5.csv" },
   { level: 2, file: "level-2-ages-6-8.csv" },
@@ -1942,40 +1697,21 @@ function csvCell(value) {
   return text;
 }
 function writeLevel(level, filePath) {
-  const meta = LEVELS[level - 1];
   const stream = createWriteStream(filePath, { encoding: "utf8" });
-  const letters = ["A", "B", "C", "D", "E"];
   return new Promise((resolve, reject) => {
     stream.on("error", reject);
-    stream.write("\uFEFF");
-    stream.write(`${HEADER.join(",")}
-`);
+    stream.write("question,answer\n");
     let index = 0;
-    const chunkSize = 250;
+    const chunkSize = 400;
     const pump = () => {
       let chunk = "";
       const end = Math.min(BANK_SIZE, index + chunkSize);
       for (; index < end; index++) {
         const q = generateQuestion(level, index);
-        chunk += [
-          q.id + 1,
-          q.level,
-          meta.ages,
-          meta.tutor.name,
-          q.skill,
-          q.passage ?? "",
-          q.prompt,
-          q.answers[0] ?? "",
-          q.answers[1] ?? "",
-          q.answers[2] ?? "",
-          q.answers[3] ?? "",
-          q.answers[4] ?? "",
-          letters[q.correctIndex] ?? "",
-          q.answers[q.correctIndex] ?? "",
-          q.correctIndex,
-          q.explanation
-        ].map(csvCell).join(",");
-        chunk += "\n";
+        const question = q.passage ? `${q.passage} ${q.prompt}` : q.prompt;
+        const answer = q.answers[q.correctIndex] ?? "";
+        chunk += `${csvCell(question)},${csvCell(answer)}
+`;
       }
       const ok = stream.write(chunk);
       if (index >= BANK_SIZE) {
@@ -1989,6 +1725,8 @@ function writeLevel(level, filePath) {
   });
 }
 await mkdir(outDir, { recursive: true });
+await unlink(path.join(outDir, "levels.csv")).catch(() => {
+});
 for (const item of FILES) {
   const filePath = path.join(outDir, item.file);
   const started = Date.now();
@@ -1998,5 +1736,5 @@ for (const item of FILES) {
   process.stdout.write(`Done ${item.file} in ${((Date.now() - started) / 1e3).toFixed(1)}s
 `);
 }
-process.stdout.write(`CSV files saved in ${outDir}
+process.stdout.write(`Chat CSV files saved in ${outDir}
 `);

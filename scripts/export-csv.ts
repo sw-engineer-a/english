@@ -1,32 +1,12 @@
 import { createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { LEVELS } from '../src/data/levels'
 import { generateQuestion } from '../src/engine/generate'
 import { BANK_SIZE, type LevelId } from '../src/types'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(root, 'csv')
-
-const HEADER = [
-  'question_id',
-  'level',
-  'ages',
-  'tutor',
-  'skill',
-  'passage',
-  'prompt',
-  'answer_a',
-  'answer_b',
-  'answer_c',
-  'answer_d',
-  'answer_e',
-  'correct_letter',
-  'correct_answer',
-  'correct_index',
-  'explanation',
-]
 
 const FILES: { level: LevelId; file: string }[] = [
   { level: 1, file: 'level-1-ages-3-5.csv' },
@@ -44,44 +24,23 @@ function csvCell(value: string | number): string {
 }
 
 function writeLevel(level: LevelId, filePath: string): Promise<void> {
-  const meta = LEVELS[level - 1]
   const stream = createWriteStream(filePath, { encoding: 'utf8' })
-  const letters = ['A', 'B', 'C', 'D', 'E'] as const
 
   return new Promise((resolve, reject) => {
     stream.on('error', reject)
-    stream.write('\uFEFF')
-    stream.write(`${HEADER.join(',')}\n`)
+    stream.write('question,answer\n')
 
     let index = 0
-    const chunkSize = 250
+    const chunkSize = 400
 
     const pump = () => {
       let chunk = ''
       const end = Math.min(BANK_SIZE, index + chunkSize)
       for (; index < end; index++) {
         const q = generateQuestion(level, index)
-        chunk += [
-          q.id + 1,
-          q.level,
-          meta.ages,
-          meta.tutor.name,
-          q.skill,
-          q.passage ?? '',
-          q.prompt,
-          q.answers[0] ?? '',
-          q.answers[1] ?? '',
-          q.answers[2] ?? '',
-          q.answers[3] ?? '',
-          q.answers[4] ?? '',
-          letters[q.correctIndex] ?? '',
-          q.answers[q.correctIndex] ?? '',
-          q.correctIndex,
-          q.explanation,
-        ]
-          .map(csvCell)
-          .join(',')
-        chunk += '\n'
+        const question = q.passage ? `${q.passage} ${q.prompt}` : q.prompt
+        const answer = q.answers[q.correctIndex] ?? ''
+        chunk += `${csvCell(question)},${csvCell(answer)}\n`
       }
 
       const ok = stream.write(chunk)
@@ -98,6 +57,7 @@ function writeLevel(level: LevelId, filePath: string): Promise<void> {
 }
 
 await mkdir(outDir, { recursive: true })
+await unlink(path.join(outDir, 'levels.csv')).catch(() => {})
 
 for (const item of FILES) {
   const filePath = path.join(outDir, item.file)
@@ -107,4 +67,4 @@ for (const item of FILES) {
   process.stdout.write(`Done ${item.file} in ${((Date.now() - started) / 1000).toFixed(1)}s\n`)
 }
 
-process.stdout.write(`CSV files saved in ${outDir}\n`)
+process.stdout.write(`Chat CSV files saved in ${outDir}\n`)

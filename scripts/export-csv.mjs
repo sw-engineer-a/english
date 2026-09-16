@@ -1,11 +1,18 @@
 // scripts/export-csv.ts
 import { createWriteStream } from "node:fs";
-import { mkdir, unlink } from "node:fs/promises";
+import { mkdir, readdir, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// src/types.ts
-var BANK_SIZE = 1e5;
+// src/data/doctorLevels.ts
+var DOCTOR_CSV_FILES = {
+  1: "category-1-symptoms-checkup.csv",
+  2: "category-2-pharmacy-medicine.csv",
+  3: "category-3-first-aid-emergency.csv",
+  4: "category-4-healthy-habits.csv",
+  5: "category-5-appointments-followup.csv",
+  6: "category-6-mental-wellness.csv"
+};
 
 // src/data/banks.ts
 var NAMES = [
@@ -30,28 +37,6 @@ var NAMES = [
   "Luca",
   "Zoe"
 ];
-var PRONOUNS = {
-  Mia: { subj: "she", obj: "her", poss: "her" },
-  Leo: { subj: "he", obj: "him", poss: "his" },
-  Sam: { subj: "he", obj: "him", poss: "his" },
-  Ana: { subj: "she", obj: "her", poss: "her" },
-  Ben: { subj: "he", obj: "him", poss: "his" },
-  Yuki: { subj: "she", obj: "her", poss: "her" },
-  Omar: { subj: "he", obj: "him", poss: "his" },
-  Lara: { subj: "she", obj: "her", poss: "her" },
-  Nico: { subj: "he", obj: "him", poss: "his" },
-  Hana: { subj: "she", obj: "her", poss: "her" },
-  Eli: { subj: "he", obj: "him", poss: "his" },
-  Sara: { subj: "she", obj: "her", poss: "her" },
-  Ken: { subj: "he", obj: "him", poss: "his" },
-  Lila: { subj: "she", obj: "her", poss: "her" },
-  Theo: { subj: "he", obj: "him", poss: "his" },
-  Maya: { subj: "she", obj: "her", poss: "her" },
-  Rui: { subj: "he", obj: "him", poss: "his" },
-  Noor: { subj: "she", obj: "her", poss: "her" },
-  Luca: { subj: "he", obj: "him", poss: "his" },
-  Zoe: { subj: "she", obj: "her", poss: "her" }
-};
 var COLORS = [
   "red",
   "blue",
@@ -116,74 +101,6 @@ var ANIMALS = [
   "shark",
   "parrot"
 ];
-var ANIMAL_EMOJI = {
-  cat: "\u{1F431}",
-  dog: "\u{1F436}",
-  bird: "\u{1F426}",
-  fish: "\u{1F41F}",
-  duck: "\u{1F986}",
-  frog: "\u{1F438}",
-  cow: "\u{1F42E}",
-  pig: "\u{1F437}",
-  horse: "\u{1F434}",
-  sheep: "\u{1F411}",
-  lion: "\u{1F981}",
-  tiger: "\u{1F42F}",
-  bear: "\u{1F43B}",
-  monkey: "\u{1F435}",
-  elephant: "\u{1F418}",
-  rabbit: "\u{1F430}",
-  mouse: "\u{1F42D}",
-  chicken: "\u{1F414}",
-  bee: "\u{1F41D}",
-  butterfly: "\u{1F98B}",
-  turtle: "\u{1F422}",
-  snake: "\u{1F40D}",
-  giraffe: "\u{1F992}",
-  zebra: "\u{1F993}",
-  panda: "\u{1F43C}",
-  fox: "\u{1F98A}",
-  owl: "\u{1F989}",
-  whale: "\u{1F40B}",
-  dolphin: "\u{1F42C}",
-  penguin: "\u{1F427}",
-  koala: "\u{1F428}",
-  kangaroo: "\u{1F998}",
-  goat: "\u{1F410}",
-  hen: "\u{1F414}",
-  puppy: "\u{1F436}",
-  kitten: "\u{1F431}",
-  lamb: "\u{1F411}",
-  calf: "\u{1F42E}",
-  ant: "\u{1F41C}",
-  spider: "\u{1F577}\uFE0F",
-  swan: "\u{1F9A2}",
-  wolf: "\u{1F43A}",
-  deer: "\u{1F98C}",
-  camel: "\u{1F42B}",
-  seal: "\u{1F9AD}",
-  crab: "\u{1F980}",
-  shark: "\u{1F988}",
-  parrot: "\u{1F99C}"
-};
-var ANIMAL_SOUNDS = {
-  cat: "meow",
-  dog: "woof",
-  bird: "tweet",
-  duck: "quack",
-  frog: "ribbit",
-  cow: "moo",
-  pig: "oink",
-  horse: "neigh",
-  sheep: "baa",
-  lion: "roar",
-  mouse: "squeak",
-  bee: "buzz",
-  owl: "hoot",
-  snake: "hiss",
-  chicken: "cluck",
-  hen: "cluck"
-};
 var FOODS = [
   "apple",
   "banana",
@@ -251,24 +168,6 @@ var L1_PLACES = [
   "box",
   "bag",
   "shop"
-];
-var BODY = [
-  "head",
-  "eye",
-  "ear",
-  "nose",
-  "mouth",
-  "hand",
-  "foot",
-  "arm",
-  "leg",
-  "hair",
-  "tooth",
-  "tummy",
-  "finger",
-  "knee",
-  "back",
-  "face"
 ];
 var TOYS = [
   "ball",
@@ -367,362 +266,9 @@ var L2_OBJECTS = [
   "photo",
   "gift"
 ];
-var OPPOSITES = [
-  ["big", "small"],
-  ["hot", "cold"],
-  ["happy", "sad"],
-  ["fast", "slow"],
-  ["old", "new"],
-  ["open", "closed"],
-  ["clean", "dirty"],
-  ["long", "short"],
-  ["loud", "quiet"],
-  ["day", "night"],
-  ["up", "down"],
-  ["in", "out"],
-  ["yes", "no"],
-  ["good", "bad"],
-  ["full", "empty"],
-  ["early", "late"]
-];
-var IRREGULAR = [
-  ["go", "went", "gone"],
-  ["eat", "ate", "eaten"],
-  ["see", "saw", "seen"],
-  ["take", "took", "taken"],
-  ["make", "made", "made"],
-  ["come", "came", "come"],
-  ["write", "wrote", "written"],
-  ["read", "read", "read"],
-  ["give", "gave", "given"],
-  ["find", "found", "found"],
-  ["buy", "bought", "bought"],
-  ["think", "thought", "thought"],
-  ["know", "knew", "known"],
-  ["get", "got", "gotten"],
-  ["have", "had", "had"],
-  ["do", "did", "done"],
-  ["say", "said", "said"],
-  ["tell", "told", "told"],
-  ["feel", "felt", "felt"],
-  ["leave", "left", "left"],
-  ["meet", "met", "met"],
-  ["run", "ran", "run"],
-  ["sing", "sang", "sung"],
-  ["swim", "swam", "swum"],
-  ["begin", "began", "begun"],
-  ["break", "broke", "broken"],
-  ["choose", "chose", "chosen"],
-  ["drive", "drove", "driven"],
-  ["fly", "flew", "flown"],
-  ["forget", "forgot", "forgotten"],
-  ["grow", "grew", "grown"],
-  ["keep", "kept", "kept"],
-  ["lose", "lost", "lost"],
-  ["pay", "paid", "paid"],
-  ["sleep", "slept", "slept"],
-  ["speak", "spoke", "spoken"],
-  ["stand", "stood", "stood"],
-  ["teach", "taught", "taught"],
-  ["understand", "understood", "understood"],
-  ["wear", "wore", "worn"]
-];
-var REGULAR_PAST = [
-  "play",
-  "watch",
-  "visit",
-  "clean",
-  "cook",
-  "help",
-  "walk",
-  "talk",
-  "open",
-  "close",
-  "start",
-  "finish",
-  "need",
-  "want",
-  "call",
-  "ask",
-  "live",
-  "love",
-  "work",
-  "study"
-];
-var ADJECTIVES_COMPARE = [
-  "tall",
-  "short",
-  "fast",
-  "slow",
-  "old",
-  "young",
-  "big",
-  "small",
-  "cold",
-  "hot",
-  "long",
-  "quiet",
-  "loud",
-  "kind",
-  "brave",
-  "funny"
-];
-var REASONS = [
-  "it was raining",
-  "the shop was closed",
-  "the bus was late",
-  "it was her birthday",
-  "the test was tomorrow",
-  "he felt tired",
-  "the park was busy",
-  "the movie was funny",
-  "the soup was hot",
-  "the room was dark",
-  "the baby was sleeping",
-  "the homework was easy"
-];
-var PHRASAL = [
-  { verb: "look up", meaning: "search for information", example: "look up a word" },
-  { verb: "give up", meaning: "stop trying", example: "give up too soon" },
-  { verb: "find out", meaning: "discover", example: "find out the truth" },
-  { verb: "turn on", meaning: "start a machine", example: "turn on the light" },
-  { verb: "turn off", meaning: "stop a machine", example: "turn off the TV" },
-  { verb: "pick up", meaning: "lift or collect", example: "pick up the bag" },
-  { verb: "put on", meaning: "wear clothes", example: "put on a jacket" },
-  { verb: "take off", meaning: "remove clothes", example: "take off your shoes" },
-  { verb: "grow up", meaning: "become an adult", example: "grow up in a city" },
-  { verb: "wake up", meaning: "stop sleeping", example: "wake up early" },
-  { verb: "come back", meaning: "return", example: "come back later" },
-  { verb: "go on", meaning: "continue", example: "go on with the story" },
-  { verb: "set up", meaning: "arrange or start", example: "set up a meeting" },
-  { verb: "run out of", meaning: "have no more", example: "run out of time" },
-  { verb: "look after", meaning: "take care of", example: "look after a pet" },
-  { verb: "work out", meaning: "exercise or solve", example: "work out the problem" },
-  { verb: "break down", meaning: "stop working", example: "the car broke down" },
-  { verb: "check in", meaning: "register at a hotel or airport", example: "check in online" },
-  { verb: "fill in", meaning: "complete a form", example: "fill in the form" },
-  { verb: "hang out", meaning: "spend time relaxing", example: "hang out with friends" }
-];
-var IDIOMS = [
-  { idiom: "break the ice", meaning: "start a friendly conversation" },
-  { idiom: "a piece of cake", meaning: "very easy" },
-  { idiom: "under the weather", meaning: "feeling a little sick" },
-  { idiom: "hit the books", meaning: "study hard" },
-  { idiom: "once in a blue moon", meaning: "very rarely" },
-  { idiom: "cost an arm and a leg", meaning: "be very expensive" },
-  { idiom: "spill the beans", meaning: "reveal a secret" },
-  { idiom: "on the same page", meaning: "agreeing or understanding each other" },
-  { idiom: "the ball is in your court", meaning: "it is your decision now" },
-  { idiom: "bite off more than you can chew", meaning: "try to do too much" },
-  { idiom: "get cold feet", meaning: "become too nervous to continue" },
-  { idiom: "see eye to eye", meaning: "agree with someone" },
-  { idiom: "call it a day", meaning: "stop working for now" },
-  { idiom: "keep an eye on", meaning: "watch carefully" },
-  { idiom: "out of the blue", meaning: "unexpectedly" },
-  { idiom: "in hot water", meaning: "in trouble" },
-  { idiom: "over the moon", meaning: "extremely happy" },
-  { idiom: "the last straw", meaning: "the final problem after many others" },
-  { idiom: "cut corners", meaning: "do something cheaply or carelessly" },
-  { idiom: "hit the nail on the head", meaning: "describe something exactly right" }
-];
-var COLLOCATIONS = [
-  {
-    pair: "make a decision",
-    correct: "make",
-    wrong: ["do", "take", "give", "put"],
-    cue: "a decision"
-  },
-  {
-    pair: "do homework",
-    correct: "do",
-    wrong: ["make", "take", "have", "give"],
-    cue: "homework"
-  },
-  {
-    pair: "take a break",
-    correct: "take",
-    wrong: ["make", "do", "give", "put"],
-    cue: "a break"
-  },
-  {
-    pair: "have a look",
-    correct: "have",
-    wrong: ["make", "do", "give", "take"],
-    cue: "a look"
-  },
-  {
-    pair: "pay attention",
-    correct: "pay",
-    wrong: ["give", "make", "do", "keep"],
-    cue: "attention"
-  },
-  {
-    pair: "keep a promise",
-    correct: "keep",
-    wrong: ["hold", "save", "take", "make"],
-    cue: "a promise"
-  },
-  {
-    pair: "raise a question",
-    correct: "raise",
-    wrong: ["rise", "lift", "make", "open"],
-    cue: "a question"
-  },
-  {
-    pair: "catch a cold",
-    correct: "catch",
-    wrong: ["take", "get on", "hold", "meet"],
-    cue: "a cold"
-  },
-  {
-    pair: "strong coffee",
-    correct: "strong",
-    wrong: ["powerful", "heavy", "hard", "mighty"],
-    cue: "coffee"
-  },
-  {
-    pair: "heavy rain",
-    correct: "heavy",
-    wrong: ["strong", "hard", "thick", "big"],
-    cue: "rain"
-  },
-  {
-    pair: "reach a consensus",
-    correct: "reach",
-    wrong: ["make", "do", "get", "catch"],
-    cue: "a consensus"
-  },
-  {
-    pair: "draw a conclusion",
-    correct: "draw",
-    wrong: ["make", "pull", "take", "write"],
-    cue: "a conclusion"
-  },
-  {
-    pair: "pose a threat",
-    correct: "pose",
-    wrong: ["put", "make", "give", "set"],
-    cue: "a threat"
-  },
-  {
-    pair: "meet a deadline",
-    correct: "meet",
-    wrong: ["catch", "hit", "do", "keep"],
-    cue: "a deadline"
-  },
-  {
-    pair: "conduct research",
-    correct: "conduct",
-    wrong: ["make", "do up", "build", "raise"],
-    cue: "research"
-  },
-  {
-    pair: "highly likely",
-    correct: "highly",
-    wrong: ["high", "hardly", "strongly", "deeply"],
-    cue: "likely"
-  },
-  {
-    pair: "widely accepted",
-    correct: "widely",
-    wrong: ["widelyly", "broad", "big", "openly"],
-    cue: "accepted"
-  },
-  {
-    pair: "bitter disappointment",
-    correct: "bitter",
-    wrong: ["sour", "salty", "sharp", "dark"],
-    cue: "disappointment"
-  },
-  {
-    pair: "boost confidence",
-    correct: "boost",
-    wrong: ["lift up", "grow", "rise", "open"],
-    cue: "confidence"
-  },
-  {
-    pair: "address a problem",
-    correct: "address",
-    wrong: ["speak", "say", "talk", "tell"],
-    cue: "a problem"
-  }
-];
-var ACADEMIC_PAIRS = [
-  {
-    word: "significant",
-    meaning: "important or large enough to matter",
-    distractors: ["tiny and useless", "only decorative", "secret and illegal", "funny and light"]
-  },
-  {
-    word: "however",
-    meaning: "used to introduce a contrast",
-    distractors: ["used to add a similar idea", "used to give an example", "used to show time", "used to show place"]
-  },
-  {
-    word: "therefore",
-    meaning: "for that reason",
-    distractors: ["in spite of that", "for example", "before that", "on the other hand"]
-  },
-  {
-    word: "evaluate",
-    meaning: "judge the quality or value of something",
-    distractors: ["memorize without thinking", "hide from view", "copy exactly", "delay until later"]
-  },
-  {
-    word: "imply",
-    meaning: "suggest something without saying it directly",
-    distractors: ["state something loudly", "prove with numbers", "refuse completely", "translate word for word"]
-  },
-  {
-    word: "accurate",
-    meaning: "correct in every detail",
-    distractors: ["almost finished", "easy to remember", "popular with readers", "written in a hurry"]
-  },
-  {
-    word: "consequence",
-    meaning: "a result of an action",
-    distractors: ["a first draft", "a lucky guess", "a silent pause", "a borrowed idea"]
-  },
-  {
-    word: "essential",
-    meaning: "absolutely necessary",
-    distractors: ["optional and extra", "rare but pretty", "old-fashioned", "unclear"]
-  },
-  {
-    word: "interpret",
-    meaning: "explain the meaning of something",
-    distractors: ["delete extra words", "print in bold", "count the pages", "ignore the details"]
-  },
-  {
-    word: "reliable",
-    meaning: "able to be trusted",
-    distractors: ["hard to find", "new and untested", "expensive", "only used once"]
-  },
-  {
-    word: "hypothesis",
-    meaning: "an idea you can test",
-    distractors: ["a final published law", "a random complaint", "a list of names", "a type of graph"]
-  },
-  {
-    word: "contrast",
-    meaning: "a clear difference",
-    distractors: ["a perfect copy", "a repeated chorus", "a missing page", "a private diary"]
-  }
-];
-var FORMAL_INFORMAL = [
-  { informal: "kids", formal: "children", extra: ["guys", "stuff", "mates"] },
-  { informal: "a lot of", formal: "a significant number of", extra: ["tons of", "heaps of", "loads of"] },
-  { informal: "find out", formal: "determine", extra: ["check out", "figure", "see"] },
-  { informal: "get", formal: "obtain", extra: ["grab", "snag", "score"] },
-  { informal: "help", formal: "assist", extra: ["give a hand", "sort out", "fix up"] },
-  { informal: "buy", formal: "purchase", extra: ["pick up", "grab", "score"] },
-  { informal: "ask for", formal: "request", extra: ["beg", "nudge", "ping"] },
-  { informal: "show", formal: "demonstrate", extra: ["point out", "flash", "wave"] },
-  { informal: "start", formal: "commence", extra: ["kick off", "jump in", "fire up"] },
-  { informal: "end", formal: "conclude", extra: ["wrap up", "call it", "cut"] },
-  { informal: "need", formal: "require", extra: ["wanna", "gotta", "could use"] },
-  { informal: "so", formal: "therefore", extra: ["yeah", "anyway", "like"] }
-];
+
+// src/types.ts
+var BANK_SIZE = 1e5;
 
 // src/engine/rng.ts
 function mulberry32(seed) {
@@ -751,939 +297,1737 @@ function decodeIndex(n, sizes) {
   }
   return out;
 }
-function product(sizes) {
-  return sizes.reduce((acc, n) => acc * n, 1);
+function pick(list, index) {
+  return list[(index % list.length + list.length) % list.length];
 }
 
 // src/engine/helpers.ts
-function article(word) {
-  return /^[aeiou]/i.test(word.trim()) ? "an" : "a";
-}
 function cap(text) {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
-function thirdPerson(verb) {
-  if (verb === "have") return "has";
-  if (verb === "do") return "does";
-  if (verb === "go") return "goes";
-  if (verb.endsWith("y") && !/[aeiou]y$/i.test(verb)) return `${verb.slice(0, -1)}ies`;
-  if (/(s|sh|ch|x|z|o)$/i.test(verb)) return `${verb}es`;
-  return `${verb}s`;
-}
-function gerund(verb) {
-  if (verb.endsWith("ie")) return `${verb.slice(0, -2)}ying`;
-  if (verb.endsWith("e") && !verb.endsWith("ee")) return `${verb.slice(0, -1)}ing`;
-  return `${verb}ing`;
-}
-function fiveChoices(correct, pool, seed, extras = []) {
-  const norm = (s) => s.trim().toLowerCase();
-  const seen = /* @__PURE__ */ new Set([norm(correct)]);
-  const rand = mulberry32(seed);
-  const distractors = [];
-  for (const candidate of shuffle([...pool, ...extras], rand)) {
-    if (distractors.length >= 4) break;
-    const value = candidate.trim();
-    if (!value || seen.has(norm(value))) continue;
-    seen.add(norm(value));
-    distractors.push(value);
-  }
-  let pad = 1;
-  while (distractors.length < 4) {
-    const fallback = `option ${pad++}`;
-    if (!seen.has(norm(fallback))) {
-      seen.add(norm(fallback));
-      distractors.push(fallback);
-    }
-  }
-  const answers = shuffle([correct, ...distractors.slice(0, 4)], rand);
+
+// src/engine/chatTurns.ts
+var SUBJECTS = [
+  "math",
+  "English",
+  "science",
+  "art",
+  "music",
+  "history",
+  "PE",
+  "reading",
+  "writing",
+  "geography"
+];
+var HOBBIES = [
+  "football",
+  "drawing",
+  "reading",
+  "singing",
+  "dancing",
+  "swimming",
+  "cooking",
+  "gaming",
+  "cycling",
+  "painting"
+];
+var JOBS = [
+  "teacher",
+  "doctor",
+  "engineer",
+  "artist",
+  "nurse",
+  "chef",
+  "driver",
+  "designer",
+  "scientist",
+  "writer"
+];
+var CITIES = [
+  "Tokyo",
+  "Seoul",
+  "London",
+  "Paris",
+  "New York",
+  "Manila",
+  "Hanoi",
+  "Bangkok",
+  "Cairo",
+  "Madrid",
+  "Beijing",
+  "Sydney"
+];
+var FEELINGS = [
+  "happy",
+  "tired",
+  "excited",
+  "nervous",
+  "okay",
+  "great",
+  "bored",
+  "hungry",
+  "sleepy",
+  "fine"
+];
+function makeCtx(level, id) {
+  const sizes = [
+    NAMES.length,
+    NAMES.length,
+    COLORS.length,
+    ANIMALS.length,
+    FOODS.length,
+    TOYS.length,
+    L2_PLACES.length,
+    L2_ACTIONS.length,
+    DAYS.length,
+    WEATHER.length,
+    SCHOOL_ITEMS.length,
+    FAMILY.length,
+    L2_OBJECTS.length,
+    NUMBER_WORDS.length,
+    SUBJECTS.length,
+    HOBBIES.length,
+    JOBS.length,
+    CITIES.length,
+    FEELINGS.length,
+    20
+  ];
+  const [
+    ni,
+    n2,
+    ci,
+    ai,
+    fi,
+    ti,
+    pi,
+    vi,
+    di,
+    wi,
+    si,
+    fami,
+    oi,
+    numi,
+    subi,
+    hobi,
+    jobi,
+    cityi,
+    feeli,
+    agei
+  ] = decodeIndex(level * 1000003 + id * 97, sizes);
   return {
-    answers,
-    correctIndex: answers.findIndex((item) => norm(item) === norm(correct))
+    name: NAMES[ni],
+    name2: NAMES[(n2 + 1) % NAMES.length],
+    color: COLORS[ci],
+    animal: ANIMALS[ai],
+    food: FOODS[fi],
+    toy: TOYS[ti],
+    place: pick([...L1_PLACES, ...L2_PLACES], pi),
+    action: pick([...L1_ACTIONS, ...L2_ACTIONS], vi),
+    day: DAYS[di],
+    weather: WEATHER[wi],
+    school: SCHOOL_ITEMS[si],
+    family: FAMILY[fami],
+    object: L2_OBJECTS[oi],
+    number: NUMBER_WORDS[numi],
+    age: (() => {
+      const ranges = {
+        1: [3, 5],
+        2: [6, 8],
+        3: [9, 10],
+        4: [11, 12],
+        5: [13, 15],
+        6: [16, 25]
+      };
+      const [min, max] = ranges[level];
+      return min + agei % (max - min + 1);
+    })(),
+    subject: SUBJECTS[subi],
+    hobby: HOBBIES[hobi],
+    job: JOBS[jobi],
+    city: CITIES[cityi],
+    feeling: FEELINGS[feeli]
   };
 }
-function finalize(question) {
-  if (question.answers.length !== 5) {
-    throw new Error(`Question ${question.id} must have 5 answers`);
+function five(replies, seed) {
+  const rand = mulberry32(seed);
+  const unique = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const reply of shuffle(replies, rand)) {
+    const key = reply.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(reply.trim());
+    if (unique.length === 5) break;
   }
-  if (question.correctIndex < 0 || question.correctIndex > 4) {
-    throw new Error(`Question ${question.id} has an invalid correct index`);
-  }
-  return question;
+  while (unique.length < 5) unique.push(`Okay.`);
+  return [unique[0], unique[1], unique[2], unique[3], unique[4]];
 }
-var GENERIC_NOUNS = [
-  "book",
-  "chair",
-  "window",
-  "pencil",
-  "garden",
-  "river",
-  "market",
-  "ticket",
-  "bottle",
-  "jacket",
-  "camera",
-  "message",
-  "project",
-  "lesson",
-  "village",
-  "station",
-  "bridge",
-  "kitchen",
-  "weekend",
-  "holiday"
+var L1 = [
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Hello!",
+    replies: () => ["Hi!", "Hello!", "Hi, friend!", "Hello, Benny!", "Hi there!"]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "How are you?",
+    replies: () => ["I am good.", "I am happy.", "I am fine.", "I am okay.", "I am great!"]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: (c) => `What is your name?`,
+    replies: (c) => [
+      `My name is ${c.name}.`,
+      `I am ${c.name}.`,
+      `My name is ${c.name2}.`,
+      `I am ${c.name2}.`,
+      `I'm ${c.name}.`
+    ]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Nice to meet you!",
+    replies: () => ["Nice to meet you too!", "You too!", "Thank you!", "Nice to meet you!", "Hi!"]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Say goodbye!",
+    replies: () => ["Bye!", "Goodbye!", "See you!", "Bye-bye!", "Good night!"]
+  },
+  {
+    goal: "Colors",
+    bot: (c) => `What color is this?`,
+    replies: (c) => [
+      `It is ${c.color}.`,
+      `${cap(c.color)}.`,
+      `This is ${c.color}.`,
+      `It is ${pick(COLORS, c.age)}.`,
+      `I see ${c.color}.`
+    ]
+  },
+  {
+    goal: "Animals",
+    bot: (c) => `What animal do you see?`,
+    replies: (c) => [
+      `A ${c.animal}.`,
+      `I see a ${c.animal}.`,
+      `It is a ${c.animal}.`,
+      `A ${pick(ANIMALS, c.age)}.`,
+      `Look, a ${c.animal}!`
+    ]
+  },
+  {
+    goal: "Food",
+    bot: (c) => `Do you like ${c.food}?`,
+    replies: (c) => [
+      `Yes, I like ${c.food}.`,
+      `I love ${c.food}!`,
+      `Yes!`,
+      `No, I don't like ${c.food}.`,
+      `Yummy!`
+    ]
+  },
+  {
+    goal: "Toys and play",
+    bot: (c) => `What do you want to play with?`,
+    replies: (c) => [
+      `I want the ${c.toy}.`,
+      `The ${c.toy}, please.`,
+      `I like the ${c.toy}.`,
+      `Let's play with the ${c.toy}.`,
+      `A ${pick(TOYS, c.age)}, please.`
+    ]
+  },
+  {
+    goal: "Numbers",
+    bot: (c) => `How many do you see?`,
+    replies: (c) => [
+      `${cap(c.number)}.`,
+      `I see ${c.number}.`,
+      `There are ${c.number}.`,
+      `${cap(pick(NUMBER_WORDS, c.age))}.`,
+      `${cap(c.number)} toys.`
+    ]
+  },
+  {
+    goal: "Family",
+    bot: (c) => `Who is this?`,
+    replies: (c) => [
+      `This is my ${c.family}.`,
+      `My ${c.family}.`,
+      `It is my ${c.family}.`,
+      `This is ${c.name}.`,
+      `My ${pick(FAMILY, c.age)}.`
+    ]
+  },
+  {
+    goal: "Places",
+    bot: (c) => `Where are you?`,
+    replies: (c) => [
+      `I am at the ${c.place}.`,
+      `At the ${c.place}.`,
+      `I am home.`,
+      `I am at school.`,
+      `In the ${pick(L1_PLACES, c.age)}.`
+    ]
+  },
+  {
+    goal: "Actions",
+    bot: (c) => `What can you do?`,
+    replies: (c) => [
+      `I can ${c.action}.`,
+      `I can ${pick(L1_ACTIONS, c.age)}.`,
+      `I can jump.`,
+      `I can run.`,
+      `I can play.`
+    ]
+  },
+  {
+    goal: "Polite talk",
+    bot: () => "Please say thank you.",
+    replies: () => ["Thank you!", "Thanks!", "Thank you very much!", "Thanks a lot!", "Thank you, friend!"]
+  },
+  {
+    goal: "Polite talk",
+    bot: () => "Can I have some juice, please?",
+    replies: () => ["Yes.", "Here you are.", "Please.", "Okay.", "Yes, please."]
+  }
 ];
-var GENERIC_ADJECTIVES = [
-  "happy",
-  "quiet",
-  "busy",
-  "friendly",
-  "careful",
-  "useful",
-  "simple",
-  "modern",
-  "famous",
-  "serious",
-  "bright",
-  "heavy",
-  "empty",
-  "fresh",
-  "honest",
-  "lucky",
-  "nervous",
-  "polite",
-  "strange",
-  "warm"
+var L2 = [
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Hello! How are you today?",
+    replies: () => [
+      "I am good, thank you.",
+      "I am fine.",
+      "I am happy today.",
+      "I am a little tired.",
+      "I am okay."
+    ]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "What is your name?",
+    replies: (c) => [
+      `My name is ${c.name}.`,
+      `I am ${c.name}.`,
+      `I'm ${c.name}. Nice to meet you.`,
+      `My name is ${c.name2}.`,
+      `People call me ${c.name}.`
+    ]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "How old are you?",
+    replies: (c) => [
+      `I am ${c.age} years old.`,
+      `I'm ${c.age}.`,
+      `I am ${c.age + 1} years old.`,
+      `${c.age} years old.`,
+      `I turned ${c.age} this year.`
+    ]
+  },
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Where are you from?",
+    replies: (c) => [
+      `I am from ${c.city}.`,
+      `I come from ${c.city}.`,
+      `From ${c.city}.`,
+      `I live in ${c.city}.`,
+      `I am from ${pick(CITIES, c.age)}.`
+    ]
+  },
+  {
+    goal: "School vocabulary",
+    bot: () => "Do you like school?",
+    replies: () => [
+      "Yes, I do.",
+      "I love school!",
+      "School is fun.",
+      "A little.",
+      "Yes!"
+    ]
+  },
+  {
+    goal: "School vocabulary",
+    bot: () => "What is your favorite subject?",
+    replies: (c) => [
+      `My favorite subject is ${c.subject}.`,
+      `I like ${c.subject}.`,
+      `${cap(c.subject)}.`,
+      `I love ${pick(SUBJECTS, c.age)}.`,
+      `Math is my favorite.`
+    ]
+  },
+  {
+    goal: "School vocabulary",
+    bot: () => "Who is your teacher?",
+    replies: (c) => [
+      `My teacher is ${c.name}.`,
+      `Miss ${c.name}.`,
+      `Mr. ${c.name2}.`,
+      `My teacher is kind.`,
+      `${c.name} is my teacher.`
+    ]
+  },
+  {
+    goal: "School vocabulary",
+    bot: (c) => `What do you need for school?`,
+    replies: (c) => [
+      `I need a ${c.school}.`,
+      `A ${c.school}, please.`,
+      `I need my ${pick(SCHOOL_ITEMS, c.age)}.`,
+      `I need a book and a pencil.`,
+      `My bag and my ${c.school}.`
+    ]
+  },
+  {
+    goal: "Daily talk",
+    bot: (c) => `What day is it today?`,
+    replies: (c) => [
+      `Today is ${c.day}.`,
+      `It is ${c.day}.`,
+      `${c.day}.`,
+      `Today is ${pick(DAYS, c.age)}.`,
+      `I think it is ${c.day}.`
+    ]
+  },
+  {
+    goal: "Weather",
+    bot: () => "How is the weather?",
+    replies: (c) => [
+      `It is ${c.weather}.`,
+      `The weather is ${c.weather}.`,
+      `It is sunny.`,
+      `It is rainy.`,
+      `It is ${pick(WEATHER, c.age)}.`
+    ]
+  },
+  {
+    goal: "Food and likes",
+    bot: (c) => `What do you like to eat?`,
+    replies: (c) => [
+      `I like ${c.food}.`,
+      `I love ${c.food}!`,
+      `I like ${pick(FOODS, c.age)}.`,
+      `Pizza, please.`,
+      `I like fruit.`
+    ]
+  },
+  {
+    goal: "Family",
+    bot: () => "Who do you live with?",
+    replies: (c) => [
+      `I live with my ${c.family}.`,
+      `With my mom and dad.`,
+      `I live with my family.`,
+      `With my ${pick(FAMILY, c.age)}.`,
+      `I live with my sister.`
+    ]
+  },
+  {
+    goal: "Hobbies",
+    bot: () => "What do you like to do?",
+    replies: (c) => [
+      `I like ${c.hobby}.`,
+      `I love ${c.hobby}.`,
+      `I like to play.`,
+      `I like ${pick(HOBBIES, c.age)}.`,
+      `I like reading books.`
+    ]
+  },
+  {
+    goal: "Places",
+    bot: (c) => `Where do you want to go?`,
+    replies: (c) => [
+      `I want to go to the ${c.place}.`,
+      `To the ${c.place}.`,
+      `I want to go home.`,
+      `To the park, please.`,
+      `To the ${pick(L2_PLACES, c.age)}.`
+    ]
+  },
+  {
+    goal: "Polite talk",
+    bot: () => "Can you help me, please?",
+    replies: () => [
+      "Yes, of course.",
+      "Sure!",
+      "Okay, I can help.",
+      "Yes, what do you need?",
+      "No problem."
+    ]
+  }
 ];
-
-// src/engine/generate.ts
-var SOUND_ANIMALS = Object.keys(ANIMAL_SOUNDS);
-var FALLBACK = [...GENERIC_NOUNS, ...GENERIC_ADJECTIVES, ...TOYS, ...SCHOOL_ITEMS];
-function spaceOk(sizes, need) {
-  if (product(sizes) < need) {
-    const extra = Math.ceil(need / Math.max(1, product(sizes)));
-    return [...sizes, extra];
+var L3 = [
+  {
+    goal: "Speaking and introductions",
+    bot: () => "Tell me about yourself.",
+    replies: (c) => [
+      `My name is ${c.name}. I am ${c.age} years old.`,
+      `I am ${c.name}, and I like ${c.hobby}.`,
+      `I live in ${c.city}.`,
+      `I am a student. I like ${c.subject}.`,
+      `Hi! I'm ${c.name2}. Nice to meet you.`
+    ]
+  },
+  {
+    goal: "Past experiences",
+    bot: () => "What did you do yesterday?",
+    replies: (c) => [
+      `I went to the ${c.place}.`,
+      `I played with my friends.`,
+      `I studied ${c.subject}.`,
+      `I watched a movie.`,
+      `I helped my ${c.family}.`
+    ]
+  },
+  {
+    goal: "School life",
+    bot: () => "What was your favorite class today?",
+    replies: (c) => [
+      `My favorite class was ${c.subject}.`,
+      `I liked ${c.subject} today.`,
+      `Art was fun.`,
+      `I enjoyed ${pick(SUBJECTS, c.age)}.`,
+      `PE was my favorite.`
+    ]
+  },
+  {
+    goal: "Reasons and because",
+    bot: (c) => `Why do you like ${c.hobby}?`,
+    replies: (c) => [
+      `Because it is fun.`,
+      `Because I feel happy.`,
+      `Because I am good at it.`,
+      `Because I can do it with friends.`,
+      `Because it helps me relax.`
+    ]
+  },
+  {
+    goal: "Comparisons",
+    bot: (c) => `Which is bigger, a ${c.animal} or a mouse?`,
+    replies: (c) => [
+      `A ${c.animal} is bigger.`,
+      `The ${c.animal} is bigger than a mouse.`,
+      `A mouse is smaller.`,
+      `The ${c.animal}.`,
+      `I think the ${c.animal} is bigger.`
+    ]
+  },
+  {
+    goal: "Feelings",
+    bot: () => "How do you feel today?",
+    replies: (c) => [
+      `I feel ${c.feeling}.`,
+      `I am ${c.feeling} today.`,
+      "I feel great.",
+      `A little tired, but okay.`,
+      `I feel ${pick(FEELINGS, c.age)}.`
+    ]
+  },
+  {
+    goal: "Weekend plans",
+    bot: () => "What are you going to do this weekend?",
+    replies: (c) => [
+      `I am going to visit the ${c.place}.`,
+      `I will play ${c.hobby}.`,
+      `I am going to study.`,
+      `I will stay home and rest.`,
+      `I am going to see my friends.`
+    ]
+  },
+  {
+    goal: "Food and preferences",
+    bot: (c) => `Would you like some ${c.food}?`,
+    replies: (c) => [
+      `Yes, please.`,
+      `No, thank you.`,
+      `Yes, I love ${c.food}.`,
+      `Maybe later.`,
+      `Just a little, please.`
+    ]
+  },
+  {
+    goal: "Directions",
+    bot: () => "Where is the library?",
+    replies: () => [
+      "It is next to the school.",
+      "Go straight and turn left.",
+      "It is near the park.",
+      "Across from the supermarket.",
+      "I can show you."
+    ]
+  },
+  {
+    goal: "Stories",
+    bot: (c) => `${c.name} lost a bag. What can you say?`,
+    replies: () => [
+      "Where did you last see it?",
+      "I can help you look.",
+      "Was it in the classroom?",
+      "Let us ask the teacher.",
+      "Do not worry. We will find it."
+    ]
+  },
+  {
+    goal: "Opinions",
+    bot: (c) => `What do you think about this ${c.object}?`,
+    replies: (c) => [
+      `I think it is nice.`,
+      `It looks interesting.`,
+      `I like it a lot.`,
+      `It is okay, but not my favorite.`,
+      `I think it is useful.`
+    ]
+  },
+  {
+    goal: "Daily routines",
+    bot: () => "What time do you usually wake up?",
+    replies: () => [
+      "I wake up at seven.",
+      "Around 7:00 in the morning.",
+      "I get up early.",
+      "Usually at half past six.",
+      "I wake up at eight on weekends."
+    ]
   }
-  return sizes;
-}
-function misspell(word, variant) {
-  const clean = word.trim();
-  const parts = clean.split(" ");
-  const target = parts[0];
-  if (target.length < 3) return `${target}e${variant}`;
-  const chars = [...target];
-  const i = variant % (chars.length - 1) + 0;
-  let next = target;
-  switch (variant % 4) {
-    case 0: {
-      const j = i + 1 < chars.length ? i + 1 : 0;
-      const tmp = chars[i];
-      chars[i] = chars[j];
-      chars[j] = tmp;
-      next = chars.join("");
-      break;
-    }
-    case 1:
-      next = target.slice(0, Math.max(1, i)) + target.slice(Math.max(1, i) + 1);
-      break;
-    case 2:
-      next = target.slice(0, i + 1) + target[i] + target.slice(i + 1);
-      break;
-    default:
-      next = target.replace(/[aeiou]/i, (m) => m === "a" ? "e" : "a");
-      break;
+];
+var L4 = [
+  {
+    goal: "Conversations",
+    bot: () => "What are your plans for this evening?",
+    replies: (c) => [
+      `I am going to ${c.action} after dinner.`,
+      "I will finish my homework first.",
+      `I might visit the ${c.place}.`,
+      "I am not sure yet.",
+      "I plan to rest and read."
+    ]
+  },
+  {
+    goal: "First conditional",
+    bot: (c) => `If it rains tomorrow, what will you do?`,
+    replies: () => [
+      "If it rains, I will stay home.",
+      "I will take an umbrella.",
+      "I will watch a movie indoors.",
+      "I will study at home.",
+      "I will call my friend instead."
+    ]
+  },
+  {
+    goal: "Opinions and reasons",
+    bot: (c) => `Do you think ${c.subject} is important?`,
+    replies: (c) => [
+      `Yes, because it helps me learn.`,
+      "Yes, it is useful in daily life.",
+      "I think so, but it can be hard.",
+      "Not really. I prefer other subjects.",
+      `Yes. ${cap(c.subject)} is important for my future.`
+    ]
+  },
+  {
+    goal: "Advice",
+    bot: () => "I feel nervous about the test. What should I do?",
+    replies: () => [
+      "You should review a little every day.",
+      "Try to sleep well tonight.",
+      "Ask the teacher if you need help.",
+      "Take deep breaths and stay calm.",
+      "Study with a friend."
+    ]
+  },
+  {
+    goal: "Phrasal verbs",
+    bot: () => "Can you look after my bag for a minute?",
+    replies: () => [
+      "Sure, I can look after it.",
+      "No problem.",
+      "Okay. I will watch it.",
+      "Yes, leave it here.",
+      "Of course."
+    ]
+  },
+  {
+    goal: "School projects",
+    bot: () => "How is your group project going?",
+    replies: () => [
+      "It is going well so far.",
+      "We still need more ideas.",
+      "We finished the first part.",
+      "It is a bit difficult, but okay.",
+      "We will present it next week."
+    ]
+  },
+  {
+    goal: "Making suggestions",
+    bot: () => "What should we do after school?",
+    replies: (c) => [
+      `Why don't we go to the ${c.place}?`,
+      `Let's play ${c.hobby}.`,
+      "How about studying together?",
+      "We could get some snacks.",
+      "Maybe we can walk in the park."
+    ]
+  },
+  {
+    goal: "Describing people",
+    bot: (c) => `What is ${c.name} like?`,
+    replies: (c) => [
+      `${c.name} is friendly and kind.`,
+      `${c.name} is funny.`,
+      `${c.name} works hard at school.`,
+      `${c.name} is a bit quiet, but nice.`,
+      `${c.name} loves ${c.hobby}.`
+    ]
+  },
+  {
+    goal: "Travel talk",
+    bot: (c) => `Have you ever visited ${c.city}?`,
+    replies: (c) => [
+      `Yes, I went to ${c.city} last year.`,
+      `Not yet, but I want to.`,
+      `No, I have never been there.`,
+      `Yes, it was amazing.`,
+      `I hope I can visit ${c.city} someday.`
+    ]
+  },
+  {
+    goal: "Problem solving",
+    bot: () => "The bus is late. What can we do?",
+    replies: () => [
+      "We can wait a few more minutes.",
+      "Maybe we should walk.",
+      "Let us call someone.",
+      "We can take the next bus.",
+      "I can check the schedule on my phone."
+    ]
   }
-  if (next.toLowerCase() === target.toLowerCase() || next.length < 2) next = `${target}x`;
-  parts[0] = next;
-  return parts.join(" ");
-}
-function regularPast(verb) {
-  if (verb.endsWith("e")) return `${verb}d`;
-  if (verb.endsWith("y") && !/[aeiou]y$/i.test(verb)) return `${verb.slice(0, -1)}ied`;
-  return `${verb}ed`;
-}
-function superlative(adj) {
-  if (adj === "good") return "best";
-  if (adj === "bad") return "worst";
-  if (adj.endsWith("y") && !/[aeiou]y$/i.test(adj)) return `${adj.slice(0, -1)}iest`;
-  if (adj.endsWith("e")) return `${adj}st`;
-  if (/[aeiou][b-df-hj-np-tv-z]$/i.test(adj) && adj.length <= 4) return `${adj}${adj.slice(-1)}est`;
-  return `${adj}est`;
-}
-function comparative(adj) {
-  if (adj === "good") return "better";
-  if (adj === "bad") return "worse";
-  if (adj.endsWith("y") && !/[aeiou]y$/i.test(adj)) return `${adj.slice(0, -1)}ier`;
-  if (adj.endsWith("e")) return `${adj}r`;
-  if (/[aeiou][b-df-hj-np-tv-z]$/i.test(adj) && adj.length <= 4) return `${adj}${adj.slice(-1)}er`;
-  return `${adj}er`;
-}
-function buildQuestion(level, id, skill, prompt, correct, pool, seed, explanation, extras = FALLBACK, passage) {
-  const { answers, correctIndex } = fiveChoices(correct, pool, seed, extras);
-  return finalize({
-    id,
-    level,
-    skill,
-    prompt,
-    passage,
-    answers,
-    correctIndex,
-    explanation
-  });
-}
-function genL1(id, seed) {
-  if (id < 4e4) {
-    const sizes2 = spaceOk([ANIMALS.length, COLORS.length, L1_ACTIONS.length, L1_PLACES.length, 4], 4e4);
-    const [ai, ci, vi2, pi, fi] = decodeIndex(id, sizes2);
-    const animal = ANIMALS[ai];
-    const color = COLORS[ci];
-    const action = L1_ACTIONS[vi2];
-    const place = L1_PLACES[pi];
-    const emoji = ANIMAL_EMOJI[animal] ?? "\u{1F43E}";
-    const passage = `Look! ${cap(article(color))} ${color} ${animal} can ${action} in the ${place}. ${emoji}`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(1, id, "Reading", "What animal do you see?", animal, ANIMALS, seed, `The animal is a ${animal}.`, ANIMALS, passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(1, id, "Colors", `What color is the ${animal}?`, color, COLORS, seed, `The ${animal} is ${color}.`, COLORS, passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(1, id, "Places", `Where is the ${animal}?`, `in the ${place}`, L1_PLACES.map((p) => `in the ${p}`), seed, `The ${animal} is in the ${place}.`, [], passage);
-    }
-    return buildQuestion(1, id, "Actions", `What can the ${animal} do?`, action, L1_ACTIONS, seed, `The ${animal} can ${action}.`, L1_ACTIONS, passage);
+];
+var L5 = [
+  {
+    goal: "Teen conversation",
+    bot: () => "How was your weekend?",
+    replies: (c) => [
+      "Pretty good. I hung out with friends.",
+      `I practiced ${c.hobby} most of the time.`,
+      "It was busy because of homework.",
+      "Not bad. I watched a few shows.",
+      "Honestly, I needed more sleep."
+    ]
+  },
+  {
+    goal: "Opinions",
+    bot: (c) => `What do you think about online classes?`,
+    replies: () => [
+      "They are convenient, but I miss real classrooms.",
+      "I like them when the lessons are clear.",
+      "They can be useful, though distractions are a problem.",
+      "I prefer face-to-face classes.",
+      "It depends on the teacher and the subject."
+    ]
+  },
+  {
+    goal: "Idioms in chat",
+    bot: () => "The homework was a piece of cake for me. What about you?",
+    replies: () => [
+      "Same here. It was really easy.",
+      "Not for me. I found it tricky.",
+      "It took me longer than I expected.",
+      "I got most of it right.",
+      "I need to review a few parts again."
+    ]
+  },
+  {
+    goal: "School stress",
+    bot: () => "Exams are coming. How are you preparing?",
+    replies: () => [
+      "I made a revision timetable.",
+      "I am starting with the hardest topics.",
+      "I study a little every evening.",
+      "I still need a better plan.",
+      "I review notes and practice past papers."
+    ]
+  },
+  {
+    goal: "Hobbies and identity",
+    bot: (c) => `Why do you enjoy ${c.hobby}?`,
+    replies: (c) => [
+      `It helps me relax after school.`,
+      `I feel more confident when I do it.`,
+      `I can meet people who like ${c.hobby} too.`,
+      "It gives me a break from screens.",
+      "I have been doing it for years."
+    ]
+  },
+  {
+    goal: "Agreeing and disagreeing",
+    bot: () => "Social media is mostly a waste of time. Do you agree?",
+    replies: () => [
+      "I partly agree. It depends how you use it.",
+      "I disagree. It helps me stay connected.",
+      "I see your point, but it can also be useful.",
+      "Yes, if people scroll all day.",
+      "Not completely. There are educational accounts too."
+    ]
+  },
+  {
+    goal: "Problem talk",
+    bot: () => "My group member is not doing any work. What should I say?",
+    replies: () => [
+      "You could talk to them politely first.",
+      "Explain what still needs to be finished.",
+      "Ask if they need help with their part.",
+      "If it continues, tell the teacher.",
+      "Suggest a clear deadline for each task."
+    ]
+  },
+  {
+    goal: "Future goals",
+    bot: () => "What do you want to do after high school?",
+    replies: (c) => [
+      `I want to study to become a ${c.job}.`,
+      "I am still deciding.",
+      `Maybe I will study in ${c.city}.`,
+      "I want to travel and then go to university.",
+      "I hope to find a job I really like."
+    ]
+  },
+  {
+    goal: "News and society",
+    bot: () => "Should students have less homework?",
+    replies: () => [
+      "Yes. Quality matters more than quantity.",
+      "A little homework is fine, but not every night.",
+      "I think projects are better than long worksheets.",
+      "It depends on the subject.",
+      "Students also need free time to rest."
+    ]
+  },
+  {
+    goal: "Everyday English",
+    bot: () => "Want to hang out later?",
+    replies: (c) => [
+      "Sure. What time works for you?",
+      `Maybe after I finish ${c.subject}.`,
+      "I can for about an hour.",
+      "Not today, but tomorrow works.",
+      "Yes. Let\u2019s meet at the caf\xE9."
+    ]
   }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([SOUND_ANIMALS.length, FOODS.length, BODY.length, TOYS.length, 5], 2e4);
-    const [si, fi, bi, ti, qi] = decodeIndex(local2, sizes2);
-    const kind = qi % 5;
-    if (kind === 0) {
-      const animal = SOUND_ANIMALS[si];
-      const sound = ANIMAL_SOUNDS[animal];
-      return buildQuestion(
-        1,
-        id,
-        "Sounds",
-        `${ANIMAL_EMOJI[animal] ?? ""} A ${animal} says\u2026`,
-        sound,
-        Object.values(ANIMAL_SOUNDS),
-        seed,
-        `A ${animal} says ${sound}!`
-      );
-    }
-    if (kind === 1) {
-      const food = FOODS[fi];
-      return buildQuestion(1, id, "Food", `Which one can we eat?`, food, [...ANIMALS, ...TOYS, ...BODY], seed, `We can eat ${article(food)} ${food}.`, []);
-    }
-    if (kind === 2) {
-      const part = BODY[bi];
-      return buildQuestion(1, id, "Body", `Which one is a body part?`, part, [...TOYS, ...FOODS, ...COLORS], seed, `${cap(part)} is a part of the body.`, []);
-    }
-    if (kind === 3) {
-      const toy = TOYS[ti];
-      return buildQuestion(1, id, "Toys", `Which one is a toy?`, toy, [...FOODS, ...BODY, ...COLORS], seed, `${cap(article(toy))} ${toy} is a toy.`, []);
-    }
-    const n = si % 10 + 1;
-    return buildQuestion(1, id, "Numbers", `What number is this? ${"\u2B50".repeat(n)}`, NUMBER_WORDS[n - 1], NUMBER_WORDS, seed, `There are ${NUMBER_WORDS[n - 1]} stars.`);
+];
+var L6 = [
+  {
+    goal: "Professional English",
+    bot: () => "Could you briefly introduce yourself?",
+    replies: (c) => [
+      `My name is ${c.name}. I am currently studying English and interested in becoming a ${c.job}.`,
+      `I\u2019m ${c.name}. I live in ${c.city} and focus on academic English.`,
+      `I\u2019m ${c.name}. I enjoy ${c.hobby} and hope to work in education.`,
+      `My name is ${c.name2}. I am preparing for advanced English exams.`,
+      `I\u2019m ${c.name}. I would like to improve my workplace communication skills.`
+    ]
+  },
+  {
+    goal: "Meetings and collaboration",
+    bot: () => "The deadline was moved up. How should we respond?",
+    replies: () => [
+      "We should prioritize the essential tasks first.",
+      "I can revise the timeline and share it today.",
+      "Let\u2019s divide the remaining work clearly.",
+      "We may need to request a short extension.",
+      "I suggest a quick meeting to reassign roles."
+    ]
+  },
+  {
+    goal: "Academic discussion",
+    bot: () => "What makes a source reliable?",
+    replies: () => [
+      "It should be accurate, recent, and well supported by evidence.",
+      "Trusted authors and clear references matter.",
+      "Peer-reviewed research is usually more reliable.",
+      "We should check for bias and weak arguments.",
+      "Reliable sources explain methods and limitations."
+    ]
+  },
+  {
+    goal: "Register and tone",
+    bot: () => "How would you request more time from a professor?",
+    replies: () => [
+      "Would it be possible to request a short extension?",
+      "I can submit a complete draft by Thursday if needed.",
+      "Thank you for considering my request.",
+      "I apologize for the delay and appreciate your understanding.",
+      "Could I ask for two extra days to finish the assignment?"
+    ]
+  },
+  {
+    goal: "Workplace chat",
+    bot: () => "A client is unhappy with the delay. What is a professional reply?",
+    replies: () => [
+      "Thank you for flagging this. I will look into it and update you by 3 p.m.",
+      "I understand your concern and apologize for the inconvenience.",
+      "We are reviewing the issue and will share a clear plan shortly.",
+      "Please let me know if you need anything while we investigate.",
+      "I appreciate your patience while we resolve this."
+    ]
+  },
+  {
+    goal: "Debate and nuance",
+    bot: () => "Is remote work better than office work?",
+    replies: () => [
+      "It depends on the role and the person.",
+      "Remote work offers flexibility, but collaboration can suffer.",
+      "Offices help with teamwork, yet commuting can be exhausting.",
+      "A hybrid model may balance both sides.",
+      "Productivity often depends more on habits than location."
+    ]
+  },
+  {
+    goal: "Collocations in context",
+    bot: () => "We need to make a decision today. What do you suggest?",
+    replies: () => [
+      "I suggest we review the key evidence first.",
+      "Let\u2019s list the pros and cons before deciding.",
+      "We should reach a consensus if possible.",
+      "I can summarize the options in a short note.",
+      "We may need more data before we decide."
+    ]
+  },
+  {
+    goal: "Interview English",
+    bot: () => "Why do you want this role?",
+    replies: (c) => [
+      `Because it matches my interest in becoming a ${c.job}.`,
+      "I want to apply my English skills in a real workplace.",
+      "The role would help me grow professionally.",
+      "I am motivated by clear goals and teamwork.",
+      "I believe I can contribute and keep learning."
+    ]
+  },
+  {
+    goal: "Problem solving",
+    bot: () => "Our survey results are unclear. What next?",
+    replies: () => [
+      "We should check the sample size and wording.",
+      "I recommend collecting a bit more data.",
+      "Let\u2019s compare the results with earlier research.",
+      "We can interview a few participants for clarity.",
+      "I suggest rewriting the weakest questions."
+    ]
+  },
+  {
+    goal: "Social English",
+    bot: () => "Thanks for joining the discussion. Any final thoughts?",
+    replies: () => [
+      "I think we covered the main points clearly.",
+      "I agree with the overall conclusion.",
+      "One issue still needs more evidence.",
+      "I am happy to revise the summary if needed.",
+      "Thank you. This was a useful conversation."
+    ]
   }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const items = [...ANIMALS, ...FOODS, ...TOYS, ...BODY];
-    const sizes2 = spaceOk([NAMES.length, items.length, COLORS.length, 4], 2e4);
-    const [ni2, ii, ci, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const item = items[ii];
-    const color = COLORS[ci];
-    if (qi % 4 === 0) {
-      return buildQuestion(1, id, "A / An", `${name} sees ${article(item)} ${item}. Choose a or an.`, article(item), ["a", "an", "the", "and", "to"], seed, `We say ${article(item)} ${item}.`);
-    }
-    if (qi % 4 === 1) {
-      return buildQuestion(1, id, "This is", `Choose the correct sentence.`, `This is ${article(item)} ${item}.`, [
-        `This is ${item} ${article(item)}.`,
-        `This are ${article(item)} ${item}.`,
-        `This ${article(item)} is ${item}.`,
-        `These is ${article(item)} ${item}.`
-      ], seed, `We say: This is ${article(item)} ${item}.`);
-    }
-    if (qi % 4 === 2) {
-      return buildQuestion(1, id, "I like", `Choose the happy sentence.`, `I like ${item}.`, [
-        `I like to ${item}.`,
-        `I likes ${item}.`,
-        `Me like ${item}.`,
-        `I likeing ${item}.`
-      ], seed, `A good sentence is: I like ${item}.`);
-    }
-    return buildQuestion(1, id, "Colors", `The ${item} is ${color}. What color is it?`, color, COLORS, seed, `It is ${color}.`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const greetings = [
-      { q: "You see a friend. What do you say?", a: "Hello!", pool: ["Goodbye!", "Stop!", "Go away!", "I am a cat!"] },
-      { q: "You want a cookie. What do you say?", a: "Please.", pool: ["No never.", "Give now!", "I sleep.", "Go home."] },
-      { q: "Someone gives you a toy. What do you say?", a: "Thank you!", pool: ["I am sad.", "Go away!", "No please sit.", "I am a bus."] },
-      { q: "You bump into a friend. What do you say?", a: "I am sorry.", pool: ["I am a dog.", "Open the sky.", "Count the milk.", "Run the color."] },
-      { q: "It is night. What do you say?", a: "Good night.", pool: ["Good morning.", "Happy soup.", "Big thank run.", "Please the sun."] },
-      { q: "It is morning. What do you say?", a: "Good morning!", pool: ["Good night.", "I am juice.", "Sit the park.", "Red please."] },
-      { q: "You leave home. What do you say?", a: "Goodbye!", pool: ["Eat the shoe.", "Hello night.", "Sorry milk.", "Please jump color."] },
-      { q: "You need help. What do you say?", a: "Help me, please.", pool: ["I am table.", "Close the baby.", "Thank the rain.", "Blue you."] }
-    ];
-    const times = ["morning", "afternoon", "evening", "night"];
-    const sizes2 = spaceOk([NAMES.length, L1_PLACES.length, greetings.length, times.length], 1e4);
-    const [ni2, pi, gi, ti] = decodeIndex(local2, sizes2);
-    const g = greetings[gi];
-    const name = NAMES[ni2];
-    const passage = `${name} is at the ${L1_PLACES[pi]} in the ${times[ti]}.`;
-    return buildQuestion(1, id, "Polite talk", `${g.q}`, g.a, g.pool, seed, `A kind answer is: ${g.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...ANIMALS.slice(0, 24), ...COLORS, ...FOODS.slice(0, 16), ...TOYS, ...FAMILY];
-  const sizes = spaceOk([words.length, NAMES.length, 6], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  const wrong = [0, 1, 2, 3].map((n) => misspell(word, vi + n + 1));
-  return buildQuestion(1, id, "Spelling", `${NAMES[ni]} asks: which spelling is right?`, word, wrong, seed, `The correct word is ${word}.`);
-}
-function genL2(id, seed) {
-  if (id < 4e4) {
-    const sizes2 = spaceOk([NAMES.length, L2_ACTIONS.length, L2_OBJECTS.length, L2_PLACES.length, DAYS.length, 4], 4e4);
-    const [ni2, ai, oi, pi, di, fi] = decodeIndex(id, sizes2);
-    const name = NAMES[ni2];
-    const p = PRONOUNS[name];
-    const action = L2_ACTIONS[ai];
-    const object = L2_OBJECTS[oi];
-    const place = L2_PLACES[pi];
-    const day = DAYS[di];
-    const passage = `${name} ${thirdPerson(action)} ${article(object)} ${object} at the ${place} on ${day}.`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(2, id, "Reading", `Who ${thirdPerson(action)} ${article(object)} ${object}?`, name, [...NAMES], seed, `${name} does it.`, NAMES, passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(2, id, "Places", `Where does ${name} ${action} ${article(object)} ${object}?`, `at the ${place}`, L2_PLACES.map((x) => `at the ${x}`), seed, `${cap(p.subj)} does it at the ${place}.`, [], passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(2, id, "Days", `When does ${name} ${action}?`, `on ${day}`, DAYS.map((d) => `on ${d}`), seed, `${name} does it on ${day}.`, [], passage);
-    }
-    return buildQuestion(2, id, "Present simple", `Choose the correct verb form.`, `${name} ${thirdPerson(action)} ${article(object)} ${object}.`, [
-      `${name} ${action} ${article(object)} ${object}.`,
-      `${name} ${gerund(action)} ${article(object)} ${object}.`,
-      `${name} ${action}s not ${object}.`,
-      `${name} are ${action} ${object}.`
-    ], seed, `With he/she/it we add -s: ${name} ${thirdPerson(action)}\u2026`, [], passage);
-  }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([WEATHER.length, SCHOOL_ITEMS.length, FAMILY.length, FOODS.length, 5], 2e4);
-    const [wi2, si, fi, foi, qi] = decodeIndex(local2, sizes2);
-    const kind = qi % 5;
-    if (kind === 0) {
-      const w = WEATHER[wi2];
-      return buildQuestion(2, id, "Weather", `The sky is ${w === "sunny" ? "bright" : w}. How is the weather?`, w, WEATHER, seed, `The weather is ${w}.`);
-    }
-    if (kind === 1) {
-      const item = SCHOOL_ITEMS[si];
-      return buildQuestion(2, id, "School", `Which word belongs at school?`, item, [...ANIMALS, ...FOODS.slice(10), ...TOYS], seed, `${cap(item)} is a school word.`, []);
-    }
-    if (kind === 2) {
-      const fam = FAMILY[fi];
-      return buildQuestion(2, id, "Family", `Which word is a family word?`, fam, [...TOYS, ...COLORS, ...L2_PLACES], seed, `${cap(fam)} is a family word.`, []);
-    }
-    if (kind === 3) {
-      const food = FOODS[foi];
-      return buildQuestion(2, id, "I like", `Choose the correct sentence.`, `I like ${food}, but I don\u2019t like ${FOODS[(foi + 3) % FOODS.length]}.`, [
-        `I likes ${food}, but I don\u2019t like ${FOODS[(foi + 3) % FOODS.length]}.`,
-        `I like ${food}, but I not like ${FOODS[(foi + 3) % FOODS.length]}.`,
-        `Me like ${food}, but I don\u2019t like ${FOODS[(foi + 3) % FOODS.length]}.`,
-        `I liking ${food}, but I don\u2019t like ${FOODS[(foi + 3) % FOODS.length]}.`
-      ], seed, `Use like with I, and don\u2019t like for the opposite.`);
-    }
-    const [a, b] = OPPOSITES[wi2 % OPPOSITES.length];
-    return buildQuestion(2, id, "Opposites", `What is the opposite of ${a}?`, b, OPPOSITES.map((x) => x[1]), seed, `${cap(a)} and ${b} are opposites.`);
-  }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const sizes2 = spaceOk([NAMES.length, SCHOOL_ITEMS.length, L2_ACTIONS.length, 5], 2e4);
-    const [ni2, si, ai, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const item = SCHOOL_ITEMS[si];
-    const action = L2_ACTIONS[ai];
-    const kind = qi % 5;
-    if (kind === 0) {
-      const useAn = article(item) === "an";
-      return buildQuestion(2, id, "A / An", `${name} needs ${article(item)} ${item}. Choose a or an.`, article(item), ["a", "an", "some a", "the an", "any"], seed, `${useAn ? "An" : "A"} is used because ${item} starts with a ${useAn ? "vowel" : "consonant"} sound.`);
-    }
-    if (kind === 1) {
-      return buildQuestion(2, id, "Plurals", `Choose the correct plural.`, item === "teacher" ? "teachers" : `${item}s`.replace(/ss$/, "ses"), [
-        `${item}esx`,
-        `${item}ies`,
-        `${item}'s s`,
-        `${item}s's`
-      ], seed, `Most nouns add -s in the plural.`);
-    }
-    if (kind === 2) {
-      return buildQuestion(2, id, "Can", `Choose the correct sentence.`, `${name} can ${action} very well.`, [
-        `${name} can ${thirdPerson(action)} very well.`,
-        `${name} cans ${action} very well.`,
-        `${name} can to ${action} very well.`,
-        `${name} can ${gerund(action)} very well.`
-      ], seed, `After can we use the base verb: can ${action}.`);
-    }
-    if (kind === 3) {
-      return buildQuestion(2, id, "Possessive", `Whose ${item} is this? It is ${PRONOUNS[name].poss}.`, `${PRONOUNS[name].poss} ${item}`, [
-        `${PRONOUNS[name].subj} ${item}`,
-        `him ${item}`,
-        `them ${item}`,
-        `they ${item}`
-      ], seed, `Use ${PRONOUNS[name].poss} before a noun.`);
-    }
-    return buildQuestion(2, id, "There is", `Choose the correct sentence.`, `There is ${article(item)} ${item} on the desk.`, [
-      `There are ${article(item)} ${item} on the desk.`,
-      `There is ${item}s on the desk.`,
-      `There be ${article(item)} ${item} on the desk.`,
-      `It are ${article(item)} ${item} on the desk.`
-    ], seed, `Use there is with one thing.`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const talks = [
-      { q: "Someone says \u201CHow are you?\u201D What can you say?", a: "I\u2019m fine, thank you.", pool: ["I am a pencil.", "Yes, I am seven weather.", "My name is running.", "It is a bag you."] },
-      { q: "You want to join a game. What can you say?", a: "Can I play, please?", pool: ["I am the weather.", "Close your Monday.", "Give me the sky.", "I don\u2019t school."] },
-      { q: "You don\u2019t understand. What can you say?", a: "Can you say that again, please?", pool: ["I am yesterday.", "Stop the teacher milk.", "Thank you I am rain.", "Please the homework eat."] },
-      { q: "It is time for lunch. What can you say?", a: "Let\u2019s eat lunch.", pool: ["Let\u2019s sleep the book.", "Open the weather.", "I can Monday.", "She are bag."] },
-      { q: "Your friend is sad. What can you say?", a: "Are you okay?", pool: ["You are a window?", "Eat the classroom.", "I am two blue.", "Please the opposite."] },
-      { q: "You meet a new classmate. What can you say?", a: "Hi, my name is\u2026 What\u2019s your name?", pool: ["I don\u2019t like I am.", "How old is the weather?", "Can you Monday me?", "This is eat."] },
-      { q: "You need a pencil. What can you say?", a: "May I borrow a pencil?", pool: ["May I borrow a weather?", "I am the pencil eat.", "Please jump the bag.", "My brother is a ruler sad."] },
-      { q: "Class is finished. What can you say?", a: "See you tomorrow!", pool: ["See you yesterday!", "I am closed.", "Thank you the floor.", "Play the teacher."] }
-    ];
-    const sizes2 = spaceOk([NAMES.length, L2_PLACES.length, talks.length, DAYS.length], 1e4);
-    const [ni2, pi, ti, di] = decodeIndex(local2, sizes2);
-    const t = talks[ti];
-    const passage = `${NAMES[ni2]} is at the ${L2_PLACES[pi]} on ${DAYS[di]}.`;
-    return buildQuestion(2, id, "Conversation", t.q, t.a, t.pool, seed, `A natural answer is: ${t.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...SCHOOL_ITEMS, ...L2_OBJECTS, ...WEATHER, ...FAMILY];
-  const sizes = spaceOk([words.length, NAMES.length, 8], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  return buildQuestion(2, id, "Spelling", `${NAMES[ni]} wrote a word. Which spelling is correct?`, word, [0, 1, 2, 3].map((n) => misspell(word, vi + n + 2)), seed, `The correct spelling is ${word}.`);
-}
-function genL3(id, seed) {
-  if (id < 4e4) {
-    const verbs = IRREGULAR.filter(
-      ([base2]) => ["go", "come", "drive", "fly", "run", "leave", "take", "buy", "find", "meet", "see", "make", "eat", "write"].includes(base2)
-    );
-    const sizes2 = spaceOk([NAMES.length, verbs.length, L2_PLACES.length, REASONS.length, L2_OBJECTS.length, 4], 4e4);
-    const [ni2, vi2, pi, ri, oi, fi] = decodeIndex(id, sizes2);
-    const name = NAMES[ni2];
-    const [base, past] = verbs[vi2];
-    const place = L2_PLACES[pi];
-    const reason = REASONS[ri];
-    const object = L2_OBJECTS[oi];
-    const p = PRONOUNS[name];
-    const motion = ["go", "come", "drive", "fly", "run", "leave"].includes(base);
-    const passage = motion ? `Yesterday, ${name} ${past} to the ${place} because ${reason}.` : `Yesterday, ${name} ${past} ${article(object)} ${object} at the ${place} because ${reason}.`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(3, id, "Past simple", `What is the past form of ${base}?`, past, verbs.map((x) => x[1]), seed, `${cap(base)} \u2192 ${past}.`, verbs.map((x) => x[1]), passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(3, id, "Reading", `Where was ${name}?`, `at the ${place}`, L2_PLACES.map((x) => `at the ${x}`), seed, `${cap(p.subj)} was at the ${place}.`, [], passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(3, id, "Because", `Why did that happen?`, `because ${reason}`, REASONS.map((x) => `because ${x}`), seed, `The reason is: ${reason}.`, [], passage);
-    }
-    return buildQuestion(3, id, "Time words", `Which word shows the action is in the past?`, "Yesterday", ["Tomorrow", "Now", "Every day", "Next week"], seed, `Yesterday tells us it already happened.`, [], passage);
-  }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([NAMES.length, ADJECTIVES_COMPARE.length, ANIMALS.length, 4], 2e4);
-    const [ni2, ai, ani, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const adj = ADJECTIVES_COMPARE[ai];
-    const other = NAMES[(ni2 + 3) % NAMES.length];
-    const animal = ANIMALS[ani];
-    const otherAnimal = ANIMALS[(ani + 5) % ANIMALS.length];
-    if (qi % 4 === 0) {
-      return buildQuestion(3, id, "Comparatives", `Choose the correct sentence.`, `${name} is ${comparative(adj)} than ${other}.`, [
-        `${name} is ${adj} than ${other}.`,
-        `${name} is more ${comparative(adj)} than ${other}.`,
-        `${name} is ${adj}erest than ${other}.`,
-        `${name} is the ${comparative(adj)} than ${other}.`
-      ], seed, `Short adjectives add -er + than: ${comparative(adj)} than.`);
-    }
-    if (qi % 4 === 1) {
-      return buildQuestion(3, id, "Comparatives", `A ${animal} is ${comparative("big")} than a ${otherAnimal}? Choose the comparative of big.`, "bigger", ["biger", "more big", "biggest than", "bigly"], seed, `Big \u2192 bigger (double the g).`);
-    }
-    if (qi % 4 === 2) {
-      return buildQuestion(3, id, "Superlatives", `Choose the correct sentence.`, `${name} is the ${superlative(adj)} in the class.`, [
-        `${name} is the more ${adj} in the class.`,
-        `${name} is ${comparative(adj)} in the class.`,
-        `${name} is most ${adj}er in the class.`,
-        `${name} is the ${adj} than the class.`
-      ], seed, `Use the + -est for the top one in a group.`);
-    }
-    return buildQuestion(3, id, "Reading", `${name} is ${comparative(adj)} than ${other}. Who is more ${adj}?`, name, [other, "both", "nobody", "the teacher"], seed, `${name} is ${comparative(adj)}.`);
-  }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const sizes2 = spaceOk([NAMES.length, REGULAR_PAST.length, IRREGULAR.length, 5], 2e4);
-    const [ni2, ri, ii, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const reg = REGULAR_PAST[ri];
-    const irr = IRREGULAR[ii];
-    const kind = qi % 5;
-    if (kind === 0) {
-      return buildQuestion(3, id, "Regular past", `What is the past form of ${reg}?`, regularPast(reg), REGULAR_PAST.map(regularPast), seed, `${cap(reg)} \u2192 ${regularPast(reg)}.`);
-    }
-    if (kind === 1) {
-      return buildQuestion(3, id, "Questions", `Choose the correct question.`, `Did ${name} ${reg} yesterday?`, [
-        `Did ${name} ${regularPast(reg)} yesterday?`,
-        `Does ${name} ${regularPast(reg)} yesterday?`,
-        `${name} did ${regularPast(reg)} yesterday?`,
-        `Did ${name} ${thirdPerson(reg)} yesterday?`
-      ], seed, `After did, use the base verb: Did ${name} ${reg}\u2026`);
-    }
-    if (kind === 2) {
-      return buildQuestion(3, id, "Negatives", `Choose the correct negative.`, `${name} didn\u2019t ${irr[0]} the book.`, [
-        `${name} didn\u2019t ${irr[1]} the book.`,
-        `${name} doesn\u2019t ${irr[1]} the book.`,
-        `${name} not ${irr[0]} the book.`,
-        `${name} didn\u2019t ${irr[2]} the book.`
-      ], seed, `After didn\u2019t, use the base form ${irr[0]}.`);
-    }
-    if (kind === 3) {
-      return buildQuestion(3, id, "Prepositions", `${name} put the book ___ the bag.`, "in", ["on to in", "at", "from", "of"], seed, `We put things in a bag.`);
-    }
-    return buildQuestion(3, id, "Frequency", `Choose the sentence with the adverb in a natural place.`, `${name} always ${thirdPerson(reg)} after school.`, [
-      `${name} ${thirdPerson(reg)} always after school.`,
-      `Always ${name} ${thirdPerson(reg)} after school the.`,
-      `${name} ${thirdPerson(reg)} after always school.`,
-      `${name} is always ${reg} after school yesterday.`
-    ], seed, `Put always before the main verb: always ${thirdPerson(reg)}.`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const talks = [
-      { q: "You missed the bus. What can you say?", a: "I missed the bus, so I was late.", pool: ["I miss the bus tomorrow so I am old.", "The bus did I.", "I am missing yesterday bus.", "Late I the bus because."] },
-      { q: "A friend asks \u201CWhat did you do last weekend?\u201D", a: "I visited my grandparents.", pool: ["I visit my grandparents tomorrow.", "I visiting my grandparents now yesterday.", "I will visited my grandparents.", "I am visit my grandparents last."] },
-      { q: "You want to suggest a plan.", a: "Why don\u2019t we go to the museum?", pool: ["Why we don\u2019t going museum?", "Don\u2019t why we go?", "We no go museum why?", "Why does we going?"] },
-      { q: "Someone looks taller than you. What can you say?", a: "You\u2019re taller than me.", pool: ["You\u2019re more taller me.", "You taller I.", "You\u2019re tallest than me.", "You are more tall I."] },
-      { q: "You need a reason. Complete: I stayed home\u2026", a: "because I felt sick.", pool: ["because I will sick.", "because I am yesterday.", "so I felt because.", "than I felt sick."] },
-      { q: "The teacher asks about last night\u2019s homework.", a: "I finished it after dinner.", pool: ["I finish it after dinner yesterday not.", "I am finish it.", "I finishing after.", "I did finished it."] },
-      { q: "You want to compare two books.", a: "This book is more interesting than that one.", pool: ["This book is interestinger.", "This book more interesting that.", "This book is the more interesting than.", "This book interestingest."] },
-      { q: "A classmate lost a bag. What can you say?", a: "Where did you last see it?", pool: ["Where you did saw it?", "Where do you saw it last?", "Where did you saw it?", "Where you see it did?"] }
-    ];
-    const sizes2 = spaceOk([NAMES.length, L2_PLACES.length, talks.length, DAYS.length], 1e4);
-    const [ni2, pi, ti, di] = decodeIndex(local2, sizes2);
-    const t = talks[ti];
-    const passage = `${NAMES[ni2]} was at the ${L2_PLACES[pi]} last ${DAYS[di]}.`;
-    return buildQuestion(3, id, "Conversation", t.q, t.a, t.pool, seed, `A clear answer is: ${t.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...IRREGULAR.map((x) => x[1]), ...REGULAR_PAST.map(regularPast), ...ADJECTIVES_COMPARE.map(comparative)];
-  const sizes = spaceOk([words.length, NAMES.length, 8], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  return buildQuestion(3, id, "Spelling", `Which form is spelled correctly? (${NAMES[ni]}\u2019s notebook)`, word, [0, 1, 2, 3].map((n) => misspell(word, vi + n + 1)), seed, `The correct form is ${word}.`);
-}
-function genL4(id, seed) {
-  if (id < 4e4) {
-    const sizes2 = spaceOk([NAMES.length, L2_ACTIONS.length, L2_PLACES.length, L2_OBJECTS.length, 4], 4e4);
-    const [ni2, ai, pi, oi, fi] = decodeIndex(id, sizes2);
-    const name = NAMES[ni2];
-    const p = PRONOUNS[name];
-    const action = L2_ACTIONS[ai];
-    const place = L2_PLACES[pi];
-    const object = L2_OBJECTS[oi];
-    const passage = `If ${name} ${thirdPerson(action)} ${article(object)} ${object} tonight, ${p.subj} will go to the ${place} tomorrow.`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(4, id, "First conditional", `Choose the correct pair of verb forms.`, `If ${name} ${thirdPerson(action)}\u2026, ${p.subj} will go\u2026`, [
-        `If ${name} will ${action}\u2026, ${p.subj} will go\u2026`,
-        `If ${name} ${action}\u2026, ${p.subj} goes\u2026`,
-        `If ${name} ${gerund(action)}\u2026, ${p.subj} will going\u2026`,
-        `If ${name} ${thirdPerson(action)}\u2026, ${p.subj} going\u2026`
-      ], seed, `If + present, will + base verb.`, [], passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(4, id, "Future", `What will ${name} do tomorrow if the plan works?`, `go to the ${place}`, L2_PLACES.map((x) => `go to the ${x}`), seed, `${cap(p.subj)} will go to the ${place}.`, [], passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(4, id, "Going to", `Choose the sentence about a plan.`, `${name} is going to ${action} ${article(object)} ${object}.`, [
-        `${name} going to ${action} ${article(object)} ${object}.`,
-        `${name} is go to ${action} ${article(object)} ${object}.`,
-        `${name} will going ${action} ${article(object)} ${object}.`,
-        `${name} is going ${thirdPerson(action)} ${object}.`
-      ], seed, `Plan: am/is/are going to + base verb.`);
-    }
-    return buildQuestion(4, id, "Reading", `When will ${name} go to the ${place}?`, "tomorrow", ["yesterday", "last week", "two years ago", "just now"], seed, `The sentence says tomorrow.`, [], passage);
-  }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([PHRASAL.length, NAMES.length, L2_OBJECTS.length, 4], 2e4);
-    const [phi, ni2, oi, qi] = decodeIndex(local2, sizes2);
-    const ph = PHRASAL[phi];
-    const name = NAMES[ni2];
-    const object = L2_OBJECTS[oi];
-    if (qi % 4 === 0) {
-      return buildQuestion(4, id, "Phrasal verbs", `What does \u201C${ph.verb}\u201D mean?`, ph.meaning, PHRASAL.map((x) => x.meaning), seed, `${cap(ph.verb)} means \u201C${ph.meaning}\u201D.`);
-    }
-    if (qi % 4 === 1) {
-      return buildQuestion(4, id, "Phrasal verbs", `${name} wants to ${ph.example}. Which phrasal verb fits?`, ph.verb, PHRASAL.map((x) => x.verb), seed, `The natural phrase is ${ph.verb}.`);
-    }
-    if (qi % 4 === 2) {
-      return buildQuestion(4, id, "Present continuous vs simple", `Choose the best sentence for a plan happening now.`, `${name} is ${gerund("pack")} ${article(object)} ${object} right now.`, [
-        `${name} ${thirdPerson("pack")} ${article(object)} ${object} right now.`,
-        `${name} pack ${article(object)} ${object} right now.`,
-        `${name} is pack ${article(object)} ${object} right now.`,
-        `${name} will packing ${object} right now.`
-      ], seed, `Right now \u2192 present continuous: is packing.`);
-    }
-    return buildQuestion(4, id, "Will vs going to", `The sky is full of dark clouds. Choose the most natural sentence.`, "It\u2019s going to rain.", [
-      "It will raining.",
-      "It rains tomorrow yesterday.",
-      "It going rain.",
-      "It will to rain now ago."
-    ], seed, `Evidence now \u2192 going to.`);
-  }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const sizes2 = spaceOk([NAMES.length, GENERIC_ADJECTIVES.length, GENERIC_NOUNS.length, 5], 2e4);
-    const [ni2, ai, oi, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const adj = GENERIC_ADJECTIVES[ai];
-    const noun = GENERIC_NOUNS[oi];
-    const kind = qi % 5;
-    if (kind === 0) {
-      return buildQuestion(4, id, "Relative clauses", `Choose the most natural sentence.`, `${name} met a teacher who is ${adj}.`, [
-        `${name} met a teacher which is ${adj}.`,
-        `${name} met a teacher who are ${adj}.`,
-        `${name} met a teacher whose is ${adj}.`,
-        `${name} met a teacher who ${adj} is.`
-      ], seed, `Use who for people.`);
-    }
-    if (kind === 1) {
-      return buildQuestion(4, id, "Opinions", `Choose a polite opinion.`, `I think this ${noun} is ${adj}.`, [
-        `I thinking this ${noun} is ${adj}.`,
-        `I am think this ${noun} ${adj}.`,
-        `For me is this ${noun} ${adj}.`,
-        `I thinks this ${noun} is ${adj}.`
-      ], seed, `I think + sentence.`);
-    }
-    if (kind === 2) {
-      return buildQuestion(4, id, "Modals", `Choose the best advice.`, `${name} should take the ${noun} to the teacher.`, [
-        `${name} should to take the ${noun}.`,
-        `${name} should taking the ${noun}.`,
-        `${name} should takes the ${noun}.`,
-        `${name} musts take the ${noun}.`
-      ], seed, `Should + base verb.`);
-    }
-    if (kind === 3) {
-      return buildQuestion(4, id, "Present perfect intro", `Choose the sentence that connects past and now.`, `${name} has lost the ${noun}.`, [
-        `${name} have lost the ${noun}.`,
-        `${name} has lose the ${noun}.`,
-        `${name} has losing the ${noun}.`,
-        `${name} is lost the ${noun} yesterday has.`
-      ], seed, `He/She + has + past participle.`);
-    }
-    return buildQuestion(4, id, "Connectors", `Complete: ${name} was tired, ___ ${PRONOUNS[name].subj} finished the ${noun}.`, "but", ["because of", "so that", "if not", "during"], seed, `But shows contrast.`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const talks = [
-      { q: "A friend asks about weekend plans. What sounds natural?", a: "I\u2019m going to visit my cousin if I finish my project.", pool: ["I will going visit my cousin if I will finish.", "I going visit if I finished.", "I am visit cousin if finish.", "If I will finish I going."] },
-      { q: "You disagree politely.", a: "I see your point, but I don\u2019t quite agree.", pool: ["You wrong totally forever.", "I not agree you point.", "My idea is more you.", "No, your sentence bad."] },
-      { q: "You need to postpone.", a: "Could we put the meeting off until Friday?", pool: ["Could we put off until the meeting Friday?", "We delay Friday the meet?", "Put we the meeting Friday off?", "Could we the meeting put?"] },
-      { q: "You offer help.", a: "If you want, I can look after your bag.", pool: ["If you will want, I looking after.", "I can looking your bag if.", "If you want I look your bag after.", "I after look your bag can."] },
-      { q: "You make a prediction with evidence.", a: "Look at those clouds \u2014 it\u2019s going to rain.", pool: ["Look at those clouds \u2014 it will raining.", "Those clouds rain it will to.", "It rains going those clouds.", "Going to it rain look."] },
-      { q: "You ask for an opinion.", a: "What would you do in my situation?", pool: ["What you would do in situation my?", "What do you would?", "What you do would my situation?", "Would what you doing?"] },
-      { q: "You explain a rule.", a: "If you press this button, the machine will start.", pool: ["If you will press this button, the machine starts.", "If you pressing, the machine will starting.", "If you press, the machine going start.", "If you pressed, the machine start will."] },
-      { q: "You talk about experience.", a: "I\u2019ve already seen that film.", pool: ["I already have see that film.", "I have already saw that film.", "I already seeing that film.", "I have see already that film."] }
-    ];
-    const sizes2 = spaceOk([NAMES.length, L2_PLACES.length, talks.length, PHRASAL.length], 1e4);
-    const [ni2, pi, ti] = decodeIndex(local2, sizes2);
-    const t = talks[ti];
-    const passage = `${NAMES[ni2]} is talking with a friend at the ${L2_PLACES[pi]}.`;
-    return buildQuestion(4, id, "Conversation", t.q, t.a, t.pool, seed, `The most natural choice is: ${t.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...PHRASAL.map((x) => x.verb), ...GENERIC_NOUNS, ...GENERIC_ADJECTIVES];
-  const sizes = spaceOk([words.length, NAMES.length, 8], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  return buildQuestion(4, id, "Spelling", `Which option is spelled correctly in ${NAMES[ni]}\u2019s essay?`, word, [0, 1, 2, 3].map((n) => misspell(word, vi + n + 3)), seed, `The correct spelling is ${word}.`);
-}
-function genL5(id, seed) {
-  if (id < 4e4) {
-    const sizes2 = spaceOk([NAMES.length, IDIOMS.length, L2_PLACES.length, GENERIC_NOUNS.length, 4], 4e4);
-    const [ni2, ii, pi, oi, fi] = decodeIndex(id, sizes2);
-    const name = NAMES[ni2];
-    const p = PRONOUNS[name];
-    const idiom = IDIOMS[ii];
-    const place = L2_PLACES[pi];
-    const noun = GENERIC_NOUNS[oi];
-    const passage = `${name} was at the ${place} when everything went wrong with the ${noun}. At first ${p.subj} wanted to call it a day, but then a classmate helped ${p.obj} break the ice with the new group. In the end ${p.subj} felt over the moon.`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(5, id, "Idioms", `What does \u201C${idiom.idiom}\u201D mean?`, idiom.meaning, IDIOMS.map((x) => x.meaning), seed, `\u201C${idiom.idiom}\u201D means ${idiom.meaning}.`, [], passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(5, id, "Reading", `How did ${name} feel at the end?`, "extremely happy", ["very angry", "too sleepy to move", "completely bored", "afraid of the dark"], seed, `Over the moon = extremely happy.`, [], passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(5, id, "Passive", `Choose the passive form.`, `The ${noun} was left at the ${place}.`, [
-        `The ${noun} was leave at the ${place}.`,
-        `The ${noun} were left at the ${place}.`,
-        `The ${noun} was lefted at the ${place}.`,
-        `The ${noun} is been leave at the ${place}.`
-      ], seed, `Past passive: was/were + past participle.`);
-    }
-    return buildQuestion(5, id, "Reported speech", `${name} said, \u201CI am tired.\u201D Choose the reported form.`, `${name} said ${p.subj} was tired.`, [
-      `${name} said ${p.subj} is tired.`,
-      `${name} said ${p.subj} am tired.`,
-      `${name} told that ${p.subj} is tired.`,
-      `${name} said ${p.subj} were tired I.`
-    ], seed, `Am/is usually becomes was in reported speech.`);
-  }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([IDIOMS.length, NAMES.length, IRREGULAR.length, 4], 2e4);
-    const [ii, ni2, vi2, qi] = decodeIndex(local2, sizes2);
-    const idiom = IDIOMS[ii];
-    const name = NAMES[ni2];
-    const irr = IRREGULAR[vi2];
-    if (qi % 4 === 0) {
-      return buildQuestion(5, id, "Idioms", `${name} used the idiom \u201C${idiom.idiom}\u201D. What does it mean?`, idiom.meaning, IDIOMS.map((x) => x.meaning), seed, `Here the idiom means: ${idiom.meaning}.`);
-    }
-    if (qi % 4 === 1) {
-      const habit = ["go", "went", "gone"];
-      const used = ["go", "run", "swim", "sleep", "speak", "write", "eat", "drive", "sing"].includes(irr[0]) ? irr : habit;
-      return buildQuestion(5, id, "Second conditional", `Choose the correct second conditional.`, `If ${name} ${used[1]} more often, ${PRONOUNS[name].subj} would feel better.`, [
-        `If ${name} ${used[0]} more often, ${PRONOUNS[name].subj} would feel better.`,
-        `If ${name} would ${used[0]} more often, ${PRONOUNS[name].subj} will feel better.`,
-        `If ${name} ${used[2]} more often, ${PRONOUNS[name].subj} would felt better.`,
-        `If ${name} ${used[1]} more often, ${PRONOUNS[name].subj} will feel better.`
-      ], seed, `Second conditional: If + past, would + base.`);
-    }
-    if (qi % 4 === 2) {
-      return buildQuestion(5, id, "Passive", `Rewrite: People speak English here.`, "English is spoken here.", [
-        "English is speak here.",
-        "English are spoken here.",
-        "English spoken is here.",
-        "English is speaking here by people now here."
-      ], seed, `Present passive: is/are + past participle.`);
-    }
-    return buildQuestion(5, id, "Tone", `A teacher asks why your homework is late. Which reply is most appropriate?`, "I\u2019m sorry \u2014 I underestimated the time it would take, but I can submit it today.", [
-      "Whatever, it\u2019s just homework.",
-      "You never told us anything.",
-      "I didn\u2019t do it because I slept, lol.",
-      "That\u2019s your problem, not mine."
-    ], seed, `Own the mistake and offer a solution.`);
-  }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const sizes2 = spaceOk([ACADEMIC_PAIRS.length, NAMES.length, GENERIC_NOUNS.length, 5], 2e4);
-    const [ai, ni2, oi, qi] = decodeIndex(local2, sizes2);
-    const item = ACADEMIC_PAIRS[ai];
-    const name = NAMES[ni2];
-    const noun = GENERIC_NOUNS[oi];
-    const kind = qi % 5;
-    if (kind === 0) {
-      return buildQuestion(5, id, "Academic vocabulary", `What does \u201C${item.word}\u201D mean?`, item.meaning, item.distractors, seed, `${cap(item.word)}: ${item.meaning}.`);
-    }
-    if (kind === 1) {
-      return buildQuestion(5, id, "Word choice", `${name} needs a precise word meaning \u201C${item.meaning}\u201D.`, item.word, ACADEMIC_PAIRS.map((x) => x.word), seed, `The best word is ${item.word}.`);
-    }
-    if (kind === 2) {
-      return buildQuestion(5, id, "Relative clauses", `Choose the most accurate sentence.`, `The ${noun} that ${name} found was damaged.`, [
-        `The ${noun} who ${name} found was damaged.`,
-        `The ${noun} that ${name} found were damaged.`,
-        `The ${noun} which ${name} found was damage.`,
-        `The ${noun} that ${name} finding was damaged.`
-      ], seed, `Use that/which for things; keep verb agreement.`);
-    }
-    if (kind === 3) {
-      return buildQuestion(5, id, "Connectors", `Complete: The result was unexpected; ____, the team continued.`, "however", ["therefore because", "for example of", "such as if", "in order the"], seed, `However introduces contrast.`);
-    }
-    return buildQuestion(5, id, "Gerunds / infinitives", `Choose the natural sentence.`, `${name} suggested checking the ${noun}.`, [
-      `${name} suggested to check the ${noun}.`,
-      `${name} suggested check the ${noun}.`,
-      `${name} suggested to checking the ${noun}.`,
-      `${name} suggested that checking to the ${noun}.`
-    ], seed, `Suggest + gerund (or that-clause).`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const talks = [
-      { q: "A classmate is stressed about exams. What sounds supportive and natural?", a: "If I were you, I\u2019d make a revision timetable and start with the hardest topic.", pool: ["If I was you I will cram all night and cry.", "You should to panic more.", "Exams are whatever, skip them.", "If I were you I would made nothing."] },
-      { q: "You need to report what the coach said: \u201CPractice starts at 5.\u201D", a: "The coach said practice started at 5.", pool: ["The coach said practice starts at 5 always now then.", "The coach told practice start at 5.", "The coach said that practice starting at 5.", "The coach said practice has start at 5."] },
-      { q: "Someone used an idiom: \u201CDon\u2019t cut corners.\u201D They mean:", a: "Don\u2019t rush and do a careless job.", pool: ["Don\u2019t walk near corners.", "Don\u2019t spend any money.", "Don\u2019t talk to strangers.", "Don\u2019t arrive early."] },
-      { q: "You disagree in a group project.", a: "I get what you mean, but the data doesn\u2019t really support that yet.", pool: ["That\u2019s dumb and you\u2019re wrong.", "I am not agree you.", "Your idea no good.", "We no use data."] },
-      { q: "You write a caption for a science fair project.", a: "The results suggest that temperature has a significant effect on growth.", pool: ["The results suggest temperature do effect growth significant.", "Results is suggesting temperature effect.", "The results suggesting significant growth temperature.", "Temperature significant the results growth."] },
-      { q: "A friend spilled the beans about a surprise party. They:", a: "revealed the secret", pool: ["cooked too many beans", "cleaned the kitchen", "arrived too early", "bought expensive tickets"] },
-      { q: "Choose the most natural complaint at a restaurant.", a: "Excuse me \u2014 I think this bill might be wrong.", pool: ["Hey you, this bill stupid.", "The bill are mistake.", "You gave wrong I think bill.", "This bill no correct, give new."] },
-      { q: "You describe a movie without spoiling it.", a: "It\u2019s slower than I expected, but the ending really stays with you.", pool: ["It slower I expect but ending stay.", "It is more slow I thought ending.", "Ending stay you but slow it.", "The movie are slow ending stay."] }
-    ];
-    const sizes2 = spaceOk([NAMES.length, IDIOMS.length, talks.length, L2_PLACES.length], 1e4);
-    const [ni2, ii, ti, pi] = decodeIndex(local2, sizes2);
-    const t = talks[ti];
-    const passage = `${NAMES[ni2]} is chatting near the ${L2_PLACES[pi]} after someone mentioned \u201C${IDIOMS[ii].idiom}\u201D.`;
-    return buildQuestion(5, id, "Teen conversation", t.q, t.a, t.pool, seed, `The strongest choice is: ${t.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...IDIOMS.map((x) => x.idiom), ...ACADEMIC_PAIRS.map((x) => x.word)];
-  const sizes = spaceOk([words.length, NAMES.length, 8], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  return buildQuestion(5, id, "Spelling", `Which option matches standard English in ${NAMES[ni]}\u2019s article?`, word, [0, 1, 2, 3].map((n) => misspell(word, vi + n + 4)), seed, `The standard form is ${word}.`);
-}
-function genL6(id, seed) {
-  if (id < 4e4) {
-    const sizes2 = spaceOk([COLLOCATIONS.length, NAMES.length, GENERIC_NOUNS.length, ACADEMIC_PAIRS.length, 4], 4e4);
-    const [ci, ni2, oi, ai, fi] = decodeIndex(id, sizes2);
-    const col = COLLOCATIONS[ci];
-    const name = NAMES[ni2];
-    const p = PRONOUNS[name];
-    const noun = GENERIC_NOUNS[oi];
-    const academic = ACADEMIC_PAIRS[ai];
-    const passage = `${name} argued that the ${noun} was ${academic.word}, yet the committee still needed to ${col.pair} before publishing the findings. ${cap(p.subj)} refused to cut corners, even under a tight schedule.`;
-    const focus = fi % 4;
-    if (focus === 0) {
-      return buildQuestion(6, id, "Collocations", `Choose the verb/adjective that collocates with \u201C${col.cue}\u201D.`, col.correct, col.wrong, seed, `The idiomatic collocation is ${col.pair}.`, [], passage);
-    }
-    if (focus === 1) {
-      return buildQuestion(6, id, "Academic vocabulary", `In this passage, \u201C${academic.word}\u201D is closest in meaning to:`, academic.meaning, academic.distractors, seed, `${cap(academic.word)} means ${academic.meaning}.`, [], passage);
-    }
-    if (focus === 2) {
-      return buildQuestion(6, id, "Reading inference", `What can be inferred about ${name}?`, `${cap(p.subj)} prioritized quality over speed.`, [
-        `${cap(p.subj)} wanted to finish at any cost.`,
-        `${cap(p.subj)} refused to publish anything.`,
-        `${cap(p.subj)} ignored the committee.`,
-        `${cap(p.subj)} cut corners to meet the deadline.`
-      ], seed, `Refusing to cut corners means ${p.subj} would not sacrifice quality.`, [], passage);
-    }
-    return buildQuestion(6, id, "Reference", `What does \u201Cthe findings\u201D most likely refer to?`, `the results of the work on the ${noun}`, [
-      "a holiday plan",
-      "a restaurant bill",
-      "a sports score",
-      "a private diary entry with no research"
-    ], seed, `The academic context points to research results.`, [], passage);
-  }
-  if (id < 6e4) {
-    const local2 = id - 4e4;
-    const sizes2 = spaceOk([FORMAL_INFORMAL.length, COLLOCATIONS.length, NAMES.length, 4], 2e4);
-    const [fi, ci, ni2, qi] = decodeIndex(local2, sizes2);
-    const pair = FORMAL_INFORMAL[fi];
-    const col = COLLOCATIONS[ci];
-    const name = NAMES[ni2];
-    if (qi % 4 === 0) {
-      return buildQuestion(6, id, "Register", `Choose the most formal equivalent of \u201C${pair.informal}\u201D.`, pair.formal, [pair.informal, ...pair.extra], seed, `In academic/workplace English, prefer ${pair.formal}.`);
-    }
-    if (qi % 4 === 1) {
-      return buildQuestion(6, id, "Register", `Which option is too informal for a research paper?`, pair.informal, [pair.formal, "subsequently", "nevertheless", "in contrast"], seed, `\u201C${pair.informal}\u201D is conversational.`);
-    }
-    if (qi % 4 === 2) {
-      return buildQuestion(6, id, "Collocations", `${name} must ___ ${col.cue} before Friday.`, col.correct, col.wrong, seed, `Use ${col.pair}.`);
-    }
-    return buildQuestion(6, id, "Nuance", `Which sentence is most precise?`, `The evidence strongly suggests a causal link, but it does not prove one.`, [
-      `The evidence proves maybe a link or not, whatever.`,
-      `The evidence are suggesting prove.`,
-      `The evidence strongly suggest a causal link but do not proves.`,
-      `The evidence is prove of causal.`
-    ], seed, `Academic English separates suggestion from proof.`);
-  }
-  if (id < 8e4) {
-    const local2 = id - 6e4;
-    const sizes2 = spaceOk([NAMES.length, IRREGULAR.length, GENERIC_NOUNS.length, 5], 2e4);
-    const [ni2, ii, oi, qi] = decodeIndex(local2, sizes2);
-    const name = NAMES[ni2];
-    const irr = IRREGULAR[ii];
-    const noun = GENERIC_NOUNS[oi];
-    const kind = qi % 5;
-    if (kind === 0) {
-      return buildQuestion(6, id, "Mixed conditionals", `Choose the most accurate mixed conditional.`, `If ${name} had ${irr[2]} the ${noun} earlier, ${PRONOUNS[name].subj} would not be in trouble now.`, [
-        `If ${name} ${irr[1]} the ${noun} earlier, ${PRONOUNS[name].subj} will not be in trouble now.`,
-        `If ${name} had ${irr[0]} the ${noun} earlier, ${PRONOUNS[name].subj} would not be in trouble now.`,
-        `If ${name} has ${irr[2]} the ${noun} earlier, ${PRONOUNS[name].subj} would not been in trouble now.`,
-        `If ${name} would have ${irr[2]} the ${noun} earlier, ${PRONOUNS[name].subj} would not be in trouble now.`
-      ], seed, `Past condition + present result: had + past participle, would + base.`);
-    }
-    if (kind === 1) {
-      return buildQuestion(6, id, "Inversion", `Choose the more formal inverted form.`, `Had ${name} ${irr[2]} sooner, the ${noun} would have been saved.`, [
-        `Had ${name} ${irr[0]} sooner, the ${noun} would have been saved.`,
-        `Had ${name} would ${irr[2]} sooner, the ${noun} would have been saved.`,
-        `Did ${name} had ${irr[2]} sooner, the ${noun} would have been saved.`,
-        `Have ${name} ${irr[2]} sooner, the ${noun} would been saved.`
-      ], seed, `Formal inversion: Had + subject + past participle.`);
-    }
-    if (kind === 2) {
-      return buildQuestion(6, id, "Cleft sentences", `Choose the cleft sentence that emphasizes the ${noun}.`, `It was the ${noun} that caused the delay.`, [
-        `It were the ${noun} that caused the delay.`,
-        `It was the ${noun} which cause the delay.`,
-        `It is been the ${noun} that caused the delay.`,
-        `It was the ${noun} that causing the delay.`
-      ], seed, `Cleft: It was X that + clause.`);
-    }
-    if (kind === 3) {
-      return buildQuestion(6, id, "Participles", `Choose the sentence with a correct participle clause.`, `Having ${irr[2]} the ${noun}, ${name} left the office.`, [
-        `Having ${irr[0]} the ${noun}, ${name} left the office.`,
-        `Having ${irr[1]} the ${noun}, ${name} left the office.`,
-        `Have ${irr[2]} the ${noun}, ${name} left the office.`,
-        `Having ${irr[2]} the ${noun}, ${name} leaving the office.`
-      ], seed, `Having + past participle.`);
-    }
-    return buildQuestion(6, id, "Subject-verb agreement", `Choose the grammatically precise sentence.`, `The committee has reached a decision on the ${noun}.`, [
-      `The committee have reach a decision on the ${noun}.`,
-      `The committee has reach a decision on the ${noun}.`,
-      `The committee has reached a decision on the ${noun}s is.`,
-      `The committee reaching has a decision on the ${noun}.`
-    ], seed, `In American academic English, committee is usually singular: has.`);
-  }
-  if (id < 9e4) {
-    const local2 = id - 8e4;
-    const talks = [
-      { q: "You are emailing a professor to request an extension. Which is best?", a: "Would it be possible to request a short extension? I can submit a complete draft by Thursday.", pool: ["Hey, I need more time, thx.", "Give me extension now please because reasons.", "I was wondering you give time or what.", "Can haz extra days lol."] },
-      { q: "In a meeting, a colleague interrupts with a weak claim. You respond professionally:", a: "Could we look at the data again? I\u2019m not sure that conclusion is fully supported yet.", pool: ["That\u2019s nonsense and you know it.", "Your idea is stupid frankly.", "No way that works, bro.", "I am not agree you conclusion."] },
-      { q: "Which sentence belongs in an academic essay?", a: "This paper examines the extent to which urban design influences public health outcomes.", pool: ["This paper gonna talk about cities and health stuff.", "I will tell you what I think about cities.", "Cities are like, really important, you know?", "We gonna look at health in the city yeah."] },
-      { q: "Choose the most idiomatic collocation.", a: "The policy poses a threat to smaller businesses.", pool: ["The policy puts a threat to smaller businesses.", "The policy makes a threat to smaller businesses.", "The policy does a threat to smaller businesses.", "The policy gives a threat to smaller businesses."] },
-      { q: "You need to concede a point without abandoning your argument.", a: "While the method has limitations, the overall pattern remains consistent.", pool: ["The method has limitations so my whole argument is dead.", "Limitations whatever, I still win.", "The method limitation but pattern consistent remaining.", "While the method has limitations, but the pattern remains."] },
-      { q: "Which option has the most precise hedging?", a: "The findings appear to indicate a modest improvement.", pool: ["The findings totally prove everything forever.", "The findings appear indicate modest improve.", "The findings are prove a modest improvement.", "The findings indicating modest improvement appear to."] },
-      { q: "A client is unhappy. Choose the most professional reply.", a: "Thank you for flagging this. I\u2019ll look into the issue and get back to you by 3 p.m.", pool: ["Not my fault, talk to someone else.", "Wow chill, it\u2019s not that serious.", "I\u2019ll try maybe later if I remember.", "You should have read the email."] },
-      { q: "Choose the sentence with correct parallel structure.", a: "The role requires analyzing data, presenting findings, and writing reports.", pool: ["The role requires analyzing data, to present findings, and write reports.", "The role requires analyze data, presenting findings, and to write reports.", "The role requires analyzing data, presenting findings, and to writing reports.", "The role requires analyzing data, present findings, and wrote reports."] }
-    ];
-    const sizes2 = spaceOk([NAMES.length, talks.length, COLLOCATIONS.length, FORMAL_INFORMAL.length], 1e4);
-    const [ni2, ti, ci] = decodeIndex(local2, sizes2);
-    const t = talks[ti];
-    const passage = `${NAMES[ni2]} is reviewing a draft that currently overuses \u201C${FORMAL_INFORMAL[ci % FORMAL_INFORMAL.length].informal}\u201D and misses the collocation ${COLLOCATIONS[ci].pair}.`;
-    return buildQuestion(6, id, "Professional English", t.q, t.a, t.pool, seed, `The most proficient choice is: ${t.a}`, [], passage);
-  }
-  const local = id - 9e4;
-  const words = [...COLLOCATIONS.map((x) => x.pair), ...ACADEMIC_PAIRS.map((x) => x.word), ...FORMAL_INFORMAL.map((x) => x.formal)];
-  const sizes = spaceOk([words.length, NAMES.length, 8], 1e4);
-  const [wi, ni, vi] = decodeIndex(local, sizes);
-  const word = words[wi];
-  return buildQuestion(6, id, "Accuracy", `Which form is standard in ${NAMES[ni]}\u2019s final draft?`, word, [0, 1, 2, 3].map((n) => misspell(word, vi + n + 5)), seed, `The standard form is ${word}.`);
-}
-var GENERATORS = {
-  1: genL1,
-  2: genL2,
-  3: genL3,
-  4: genL4,
-  5: genL5,
-  6: genL6
+];
+var BY_LEVEL = {
+  1: L1,
+  2: L2,
+  3: L3,
+  4: [...L3, ...L4],
+  5: [...L4, ...L5],
+  6: [...L5, ...L6]
 };
-function generateQuestion(level, id) {
+function generateChatTurn(level, id) {
   const index = (id % BANK_SIZE + BANK_SIZE) % BANK_SIZE;
+  const templates = BY_LEVEL[level];
+  const template = templates[index % templates.length];
+  const ctx = makeCtx(level, index);
   const seed = level * 1000003 + index * 97;
-  return GENERATORS[level](index, seed);
+  const [reply_1, reply_2, reply_3, reply_4, reply_5] = five(template.replies(ctx), seed);
+  return {
+    id: index,
+    level,
+    bot_message: template.bot(ctx),
+    reply_1,
+    reply_2,
+    reply_3,
+    reply_4,
+    reply_5,
+    learning_goal: template.goal
+  };
+}
+
+// src/engine/doctorTurns.ts
+var BODY = [
+  "head",
+  "tummy",
+  "throat",
+  "ear",
+  "eye",
+  "tooth",
+  "knee",
+  "back",
+  "chest",
+  "hand",
+  "foot",
+  "nose"
+];
+var SYMPTOMS = [
+  "a fever",
+  "a cough",
+  "a headache",
+  "a sore throat",
+  "a runny nose",
+  "a stomachache",
+  "an allergy",
+  "dizziness",
+  "a rash",
+  "ear pain"
+];
+var FOODS2 = ["water", "soup", "fruit", "rice", "juice", "yogurt", "toast", "tea"];
+var HABITS = ["sleep", "exercise", "wash hands", "brush teeth", "drink water", "rest"];
+var TIMES = ["this morning", "yesterday", "last night", "two days ago", "since Monday", "after lunch"];
+var MEDICINES = ["syrup", "tablets", "drops", "cream", "vitamins", "lozenges"];
+var PLACES = ["clinic", "hospital", "pharmacy", "nurse room", "waiting room", "home"];
+var FEELINGS2 = ["okay", "better", "worse", "tired", "worried", "fine", "sore", "weak"];
+var ACTIVITIES = ["running", "playing football", "studying", "swimming", "walking", "sleeping"];
+function makeCtx2(level, id) {
+  const sizes = [
+    NAMES.length,
+    BODY.length,
+    SYMPTOMS.length,
+    FOODS2.length,
+    HABITS.length,
+    TIMES.length,
+    MEDICINES.length,
+    PLACES.length,
+    FEELINGS2.length,
+    ACTIVITIES.length
+  ];
+  const [ni, bi, si, fi, hi, ti, mi, pi, fei, ai] = decodeIndex(level * 900011 + id * 89, sizes);
+  return {
+    name: NAMES[ni],
+    body: BODY[bi],
+    symptom: SYMPTOMS[si],
+    food: FOODS2[fi],
+    habit: HABITS[hi],
+    time: TIMES[ti],
+    medicine: MEDICINES[mi],
+    place: PLACES[pi],
+    feeling: FEELINGS2[fei],
+    activity: ACTIVITIES[ai]
+  };
+}
+function five2(replies, seed) {
+  const rand = mulberry32(seed);
+  const unique = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const reply of shuffle(replies, rand)) {
+    const key = reply.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(reply.trim());
+    if (unique.length === 5) break;
+  }
+  while (unique.length < 5) unique.push("Okay.");
+  return [unique[0], unique[1], unique[2], unique[3], unique[4]];
+}
+var L12 = [
+  {
+    goal: "Greeting the doctor",
+    bot: () => "Hello! How are you today?",
+    replies: () => ["I am okay.", "I feel sick.", "I am fine.", "My tummy hurts.", "I feel tired."]
+  },
+  {
+    goal: "Body parts",
+    bot: (c) => `Does your ${c.body} hurt?`,
+    replies: (c) => [
+      `Yes, my ${c.body} hurts.`,
+      "A little.",
+      "No, it is okay.",
+      `Yes, it hurts here.`,
+      "It hurts when I move."
+    ]
+  },
+  {
+    goal: "Feelings",
+    bot: () => "How do you feel?",
+    replies: (c) => [
+      `I feel ${c.feeling}.`,
+      "I feel sick.",
+      "I feel better.",
+      "I feel hot.",
+      "I feel sad."
+    ]
+  },
+  {
+    goal: "Tummy talk",
+    bot: () => "Does your tummy hurt?",
+    replies: () => ["Yes.", "No.", "A little.", "Yes, after eating.", "It hurts now."]
+  },
+  {
+    goal: "Brave clinic visit",
+    bot: () => "Can I look in your mouth?",
+    replies: () => ["Okay.", "Yes.", "I am ready.", "Please be gentle.", "Yes, Doctor."]
+  },
+  {
+    goal: "Rest and care",
+    bot: () => "Please drink some water.",
+    replies: () => ["Okay.", "Yes, I will.", "Thank you.", "I want water.", "Okay, Doctor."]
+  },
+  {
+    goal: "Parents and help",
+    bot: () => "Who came with you today?",
+    replies: (c) => ["My mom.", "My dad.", `I came with ${c.name}.`, "My grandma.", "My family."]
+  },
+  {
+    goal: "Medicine words",
+    bot: (c) => `This is ${c.medicine}. Can you take it?`,
+    replies: () => ["Yes.", "Okay.", "It tastes funny.", "I can try.", "With water, please."]
+  }
+];
+var L22 = [
+  {
+    goal: "Describing symptoms",
+    bot: () => "What is wrong today?",
+    replies: (c) => [
+      `I have ${c.symptom}.`,
+      `My ${c.body} hurts.`,
+      "I feel sick.",
+      `I have had ${c.symptom} since ${c.time}.`,
+      "I do not feel well."
+    ]
+  },
+  {
+    goal: "When it started",
+    bot: () => "When did it start?",
+    replies: (c) => [
+      `It started ${c.time}.`,
+      "Yesterday.",
+      "This morning.",
+      "Two days ago.",
+      "Last night."
+    ]
+  },
+  {
+    goal: "Fever and cold",
+    bot: () => "Do you have a fever?",
+    replies: () => [
+      "Yes, I feel hot.",
+      "No, I do not.",
+      "Maybe a little.",
+      "Yes, since last night.",
+      "My mom checked. It was high."
+    ]
+  },
+  {
+    goal: "Healthy habits",
+    bot: (c) => `Do you ${c.habit} every day?`,
+    replies: (c) => [
+      `Yes, I ${c.habit} every day.`,
+      "Sometimes.",
+      "Not always.",
+      "I try to.",
+      "No, I forget."
+    ]
+  },
+  {
+    goal: "Appointments",
+    bot: () => "Can you come back tomorrow?",
+    replies: () => [
+      "Yes, I can.",
+      "What time?",
+      "Okay.",
+      "I need to ask my parents.",
+      "Yes, after school."
+    ]
+  },
+  {
+    goal: "Food and drink",
+    bot: (c) => `Please drink more ${c.food}.`,
+    replies: (c) => [
+      `Okay. I will drink ${c.food}.`,
+      "Thank you.",
+      "How much should I drink?",
+      "I will try.",
+      "Yes, Doctor."
+    ]
+  },
+  {
+    goal: "Allergy basics",
+    bot: () => "Are you allergic to any medicine?",
+    replies: () => [
+      "No, I am not.",
+      "I do not know.",
+      "Yes, some medicine makes me itchy.",
+      "My mom says no.",
+      "I need to check."
+    ]
+  },
+  {
+    goal: "Pharmacy talk",
+    bot: (c) => `Please get this ${c.medicine} from the pharmacy.`,
+    replies: () => [
+      "Okay.",
+      "Where is the pharmacy?",
+      "Thank you.",
+      "How many times a day?",
+      "I understand."
+    ]
+  }
+];
+var L32 = [
+  {
+    goal: "Symptom history",
+    bot: () => "Can you tell me more about your symptoms?",
+    replies: (c) => [
+      `I have ${c.symptom}, and it started ${c.time}.`,
+      `My ${c.body} hurts when I move.`,
+      "It is worse at night.",
+      "I also feel tired.",
+      "The pain comes and goes."
+    ]
+  },
+  {
+    goal: "Activity and injury",
+    bot: (c) => `Did this happen while you were ${c.activity}?`,
+    replies: (c) => [
+      `Yes, during ${c.activity}.`,
+      "No, it started later.",
+      "Maybe. I am not sure.",
+      "Yes, after school sports.",
+      "No, I was resting."
+    ]
+  },
+  {
+    goal: "Questions for the doctor",
+    bot: () => "Do you have any questions for me?",
+    replies: (c) => [
+      "When can I go back to school?",
+      `How long should I take the ${c.medicine}?`,
+      "Should I stay home tomorrow?",
+      "Is it serious?",
+      "Can I play sports this week?"
+    ]
+  },
+  {
+    goal: "First aid basics",
+    bot: () => "If you cut your finger, what should you do first?",
+    replies: () => [
+      "Wash it and put a bandage on.",
+      "Tell an adult.",
+      "Keep it clean.",
+      "Do not touch dirty things.",
+      "Ask for help."
+    ]
+  },
+  {
+    goal: "Allergies",
+    bot: () => "Have you noticed any allergies?",
+    replies: () => [
+      "I sneeze near dust.",
+      "Some foods make my tummy hurt.",
+      "I am not sure.",
+      "I get itchy in spring.",
+      "No known allergies."
+    ]
+  },
+  {
+    goal: "Rest advice",
+    bot: () => "You should rest today. Can you do that?",
+    replies: () => [
+      "Yes, I will rest.",
+      "I have homework, but I can rest after.",
+      "Okay. No sports today.",
+      "I will stay home.",
+      "Thank you for the advice."
+    ]
+  },
+  {
+    goal: "Temperature and measurement",
+    bot: () => "What was your temperature this morning?",
+    replies: () => [
+      "It was 38 degrees.",
+      "I do not know the number.",
+      "My mom said it was high.",
+      "It was normal.",
+      "I felt hot, but we did not check."
+    ]
+  },
+  {
+    goal: "Follow-up",
+    bot: () => "Please come back if it gets worse.",
+    replies: () => [
+      "I understand.",
+      "What counts as worse?",
+      "Okay, I will tell my parents.",
+      "Thank you, Doctor.",
+      "I will return if needed."
+    ]
+  }
+];
+var L42 = [
+  {
+    goal: "Booking an appointment",
+    bot: () => "Would you like a morning or afternoon appointment?",
+    replies: () => [
+      "Morning is better for me.",
+      "Afternoon, please.",
+      "Either is fine.",
+      "After school would help.",
+      "What times are available?"
+    ]
+  },
+  {
+    goal: "Explaining the problem",
+    bot: () => "In your own words, what brings you in today?",
+    replies: (c) => [
+      `I\u2019ve had ${c.symptom} since ${c.time}.`,
+      `My ${c.body} has been sore.`,
+      "I feel worse when I exercise.",
+      "I need advice about sleeping better.",
+      "I think I may have caught a cold."
+    ]
+  },
+  {
+    goal: "Prevention",
+    bot: () => "What can you do to stay healthier this week?",
+    replies: (c) => [
+      `I can ${c.habit} more regularly.`,
+      "I can wash my hands often.",
+      "I can sleep earlier.",
+      "I can drink more water.",
+      "I can avoid sharing drinks."
+    ]
+  },
+  {
+    goal: "Pharmacy English",
+    bot: (c) => `Please take this ${c.medicine} twice a day after meals.`,
+    replies: (c) => [
+      "Twice a day after meals. Got it.",
+      "For how many days?",
+      "Should I take it with water?",
+      "What if I miss a dose?",
+      `I understand. ${c.medicine} after meals.`
+    ]
+  },
+  {
+    goal: "Consent and comfort",
+    bot: () => "Is it okay if I check your throat?",
+    replies: () => [
+      "Yes, that\u2019s fine.",
+      "Okay, please go ahead.",
+      "Can you explain first?",
+      "Yes, but please be gentle.",
+      "I feel a bit nervous, but okay."
+    ]
+  },
+  {
+    goal: "School and recovery",
+    bot: () => "Should you stay home from school?",
+    replies: () => [
+      "If I still have a fever, yes.",
+      "I can go if I feel better.",
+      "What do you recommend?",
+      "I will ask my parents.",
+      "I think one more day of rest helps."
+    ]
+  },
+  {
+    goal: "Sports injury",
+    bot: (c) => `Your ${c.body} may need rest from ${c.activity}.`,
+    replies: (c) => [
+      `Okay. No ${c.activity} for now.`,
+      "How long should I rest?",
+      "Can I do light exercise?",
+      "I understand.",
+      "I will ice it and rest."
+    ]
+  },
+  {
+    goal: "Clear communication",
+    bot: () => "Did I explain that clearly?",
+    replies: () => [
+      "Yes, thank you.",
+      "Could you repeat the medicine times?",
+      "I understand most of it.",
+      "One part is still unclear.",
+      "Yes. I can explain it back."
+    ]
+  }
+];
+var L52 = [
+  {
+    goal: "Teen wellness",
+    bot: () => "Have you been feeling more stressed than usual?",
+    replies: () => [
+      "A bit, especially with exams.",
+      "Yes. Sleep has been difficult.",
+      "Not really, just tired from training.",
+      "I feel overwhelmed some days.",
+      "I\u2019m okay, but I could use advice."
+    ]
+  },
+  {
+    goal: "Asking for help",
+    bot: () => "It\u2019s okay to ask for help. What would you like support with?",
+    replies: (c) => [
+      `Managing ${c.symptom}.`,
+      "Sleep and energy.",
+      "Sports recovery.",
+      "Anxiety before tests.",
+      "Eating more regularly."
+    ]
+  },
+  {
+    goal: "Privacy",
+    bot: () => "Would you like to talk alone for a minute?",
+    replies: () => [
+      "Yes, that would help.",
+      "No, my parent can stay.",
+      "Maybe later.",
+      "Yes, please.",
+      "I\u2019m fine either way."
+    ]
+  },
+  {
+    goal: "Sports and recovery",
+    bot: (c) => `You hurt your ${c.body} while ${c.activity}. How bad is the pain now?`,
+    replies: () => [
+      "Mild, but annoying.",
+      "Moderate when I move.",
+      "Strong if I put weight on it.",
+      "Better than yesterday.",
+      "Still sore at night."
+    ]
+  },
+  {
+    goal: "Healthy routines",
+    bot: () => "Which habit do you want to improve first?",
+    replies: (c) => [
+      `I want to improve my ${c.habit}.`,
+      "Sleeping on time.",
+      "Drinking enough water.",
+      "Taking screen breaks.",
+      "Stretching after sports."
+    ]
+  },
+  {
+    goal: "Clinic manners",
+    bot: () => "If you disagree with advice, how can you say that politely?",
+    replies: () => [
+      "Could we look at another option?",
+      "I understand, but I\u2019m worried about side effects.",
+      "Can you explain why that is best?",
+      "I\u2019d like a second opinion if possible.",
+      "Thank you. I need time to think."
+    ]
+  },
+  {
+    goal: "Mental health English",
+    bot: () => "How have your mood and energy been this week?",
+    replies: () => [
+      "Mostly stable.",
+      "Lower than usual.",
+      "Up and down.",
+      "Better when I sleep enough.",
+      "I\u2019ve felt anxious before school."
+    ]
+  },
+  {
+    goal: "Follow-up planning",
+    bot: () => "Let\u2019s plan a check-in. What works for you?",
+    replies: () => [
+      "Next week after school.",
+      "A message reminder would help.",
+      "I can come on Friday.",
+      "Mornings are difficult.",
+      "Please text my parent the time."
+    ]
+  }
+];
+var L62 = [
+  {
+    goal: "History taking",
+    bot: () => "Please summarize your main concern in one or two sentences.",
+    replies: (c) => [
+      `I\u2019ve had ${c.symptom} since ${c.time}, and it\u2019s affecting my sleep.`,
+      `My ${c.body} pain started after ${c.activity}.`,
+      "I need advice on recurring headaches.",
+      "I\u2019m here for a follow-up after last week\u2019s visit.",
+      "I want to discuss allergy symptoms that keep returning."
+    ]
+  },
+  {
+    goal: "Medication and pharmacy",
+    bot: (c) => `Please confirm how you will take the ${c.medicine}.`,
+    replies: (c) => [
+      `I\u2019ll take the ${c.medicine} twice daily after meals.`,
+      "Once at night with water.",
+      "Only if the pain is above mild.",
+      "For five days, then stop unless advised.",
+      "I\u2019ll read the label and follow the dose exactly."
+    ]
+  },
+  {
+    goal: "Consent",
+    bot: () => "Do I have your consent to proceed with the examination?",
+    replies: () => [
+      "Yes, you have my consent.",
+      "Yes, please explain each step.",
+      "I consent, but tell me if anything will hurt.",
+      "I\u2019d like my parent present.",
+      "Can we wait one minute first?"
+    ]
+  },
+  {
+    goal: "Professional patient talk",
+    bot: () => "Are there any red-flag symptoms I should know about?",
+    replies: () => [
+      "No chest pain or breathing trouble.",
+      "I had a high fever last night.",
+      "No fainting, but I felt dizzy once.",
+      "There\u2019s a new rash on my arm.",
+      "None that I noticed."
+    ]
+  },
+  {
+    goal: "Lifestyle counseling",
+    bot: () => "What change can you realistically make this month?",
+    replies: (c) => [
+      `I can improve my ${c.habit} schedule.`,
+      "I can reduce late-night screens.",
+      "I can walk 20 minutes daily.",
+      "I can prepare water in the morning.",
+      "I can keep a simple symptom diary."
+    ]
+  },
+  {
+    goal: "Clarifying advice",
+    bot: () => "Could you repeat the care plan in your own words?",
+    replies: (c) => [
+      `Rest, hydrate, and take ${c.medicine} as directed.`,
+      "Return sooner if symptoms worsen.",
+      "Avoid intense exercise for a few days.",
+      "Monitor temperature and sleep.",
+      "Follow up if there\u2019s no improvement in three days."
+    ]
+  },
+  {
+    goal: "Urgent vs routine",
+    bot: () => "When should you seek urgent care instead of waiting?",
+    replies: () => [
+      "If breathing becomes difficult.",
+      "If the fever is very high and persistent.",
+      "If pain suddenly becomes severe.",
+      "If there\u2019s confusion or fainting.",
+      "If symptoms rapidly get worse."
+    ]
+  },
+  {
+    goal: "Closing the visit",
+    bot: () => "Do you feel ready to leave with a clear plan?",
+    replies: () => [
+      "Yes. Thank you for explaining.",
+      "Yes, and I\u2019ll message if anything changes.",
+      "Almost\u2014one more question about dosing.",
+      "Yes. I\u2019ll book the follow-up now.",
+      "Yes. I understand the next steps."
+    ]
+  }
+];
+var SYMPTOMS_CAT = [
+  ...L12.filter(
+    (t) => ["Greeting the doctor", "Body parts", "Feelings", "Tummy talk", "Brave clinic visit"].includes(
+      t.goal
+    )
+  ),
+  ...L22.filter(
+    (t) => ["Describing symptoms", "When it started", "Fever and cold"].includes(t.goal)
+  ),
+  ...L32.filter(
+    (t) => ["Symptom history", "Temperature and measurement", "Allergies"].includes(t.goal)
+  ),
+  ...L62.filter((t) => t.goal === "History taking" || t.goal === "Professional patient talk")
+];
+var PHARMACY_CAT = [
+  ...L12.filter((t) => t.goal === "Medicine words"),
+  ...L22.filter(
+    (t) => ["Pharmacy talk", "Allergy basics", "Food and drink"].includes(t.goal)
+  ),
+  ...L32.filter((t) => t.goal === "Questions for the doctor"),
+  ...L42.filter((t) => t.goal === "Pharmacy English" || t.goal === "Clear communication"),
+  ...L62.filter((t) => t.goal === "Medication and pharmacy" || t.goal === "Clarifying advice")
+];
+var EMERGENCY_CAT = [
+  ...L32.filter((t) => t.goal === "First aid basics" || t.goal === "Activity and injury"),
+  ...L42.filter((t) => t.goal === "Sports injury"),
+  ...L52.filter((t) => t.goal === "Sports and recovery"),
+  ...L62.filter((t) => t.goal === "Urgent vs routine"),
+  {
+    goal: "Call for help",
+    bot: () => "Someone is badly hurt. What should you do?",
+    replies: () => [
+      "Call emergency services.",
+      "Ask an adult for help right away.",
+      "Stay calm and check if they can breathe.",
+      "Do not move them if the injury looks serious.",
+      "Keep them safe until help arrives."
+    ]
+  },
+  {
+    goal: "Bleeding basics",
+    bot: () => "There is bleeding from a small cut. What is a good first step?",
+    replies: () => [
+      "Press clean cloth on the cut.",
+      "Wash the area if possible.",
+      "Put on a bandage.",
+      "Raise the hand if it is safe.",
+      "Get adult help if bleeding continues."
+    ]
+  },
+  {
+    goal: "Burns basics",
+    bot: () => "You touched something hot. What should you do?",
+    replies: () => [
+      "Cool it with running water.",
+      "Do not put ice directly on it.",
+      "Tell an adult.",
+      "Keep the area clean.",
+      "Seek help if it looks serious."
+    ]
+  }
+];
+var HABITS_CAT = [
+  ...L12.filter((t) => t.goal === "Rest and care"),
+  ...L22.filter((t) => t.goal === "Healthy habits"),
+  ...L32.filter((t) => t.goal === "Rest advice"),
+  ...L42.filter((t) => t.goal === "Prevention" || t.goal === "School and recovery"),
+  ...L52.filter((t) => t.goal === "Healthy routines"),
+  ...L62.filter((t) => t.goal === "Lifestyle counseling"),
+  {
+    goal: "Sleep habits",
+    bot: () => "How many hours do you usually sleep?",
+    replies: () => [
+      "About seven to eight hours.",
+      "Less than I need.",
+      "I go to bed too late.",
+      "I sleep well most nights.",
+      "I want to improve my sleep."
+    ]
+  },
+  {
+    goal: "Exercise habits",
+    bot: () => "How often do you exercise each week?",
+    replies: () => [
+      "Three or four times a week.",
+      "Almost every day.",
+      "Only on weekends.",
+      "Not enough right now.",
+      "I walk to school most days."
+    ]
+  }
+];
+var APPOINTMENTS_CAT = [
+  ...L12.filter((t) => t.goal === "Parents and help"),
+  ...L22.filter((t) => t.goal === "Appointments"),
+  ...L32.filter((t) => t.goal === "Follow-up"),
+  ...L42.filter(
+    (t) => ["Booking an appointment", "Explaining the problem", "Consent and comfort"].includes(t.goal)
+  ),
+  ...L52.filter((t) => t.goal === "Follow-up planning" || t.goal === "Clinic manners"),
+  ...L62.filter((t) => t.goal === "Consent" || t.goal === "Closing the visit")
+];
+var WELLNESS_CAT = [
+  ...L52.filter(
+    (t) => ["Teen wellness", "Asking for help", "Privacy", "Mental health English"].includes(t.goal)
+  ),
+  {
+    goal: "Stress talk",
+    bot: () => "What usually makes you feel stressed?",
+    replies: () => [
+      "School deadlines.",
+      "Not sleeping enough.",
+      "Too many messages and notifications.",
+      "Arguments at home.",
+      "Feeling behind in class."
+    ]
+  },
+  {
+    goal: "Support language",
+    bot: () => "Who can you talk to when you feel low?",
+    replies: () => [
+      "A trusted family member.",
+      "A school counselor.",
+      "A close friend.",
+      "A teacher I trust.",
+      "I am still looking for someone."
+    ]
+  },
+  {
+    goal: "Calming strategies",
+    bot: () => "What helps you calm down?",
+    replies: () => [
+      "Slow breathing.",
+      "A short walk.",
+      "Writing my thoughts down.",
+      "Listening to quiet music.",
+      "Talking to someone I trust."
+    ]
+  },
+  {
+    goal: "Asking gently",
+    bot: () => "How can you ask for support politely?",
+    replies: () => [
+      "Could I talk to you for a minute?",
+      "I am struggling and need advice.",
+      "Would you have time to listen later?",
+      "I need help with stress management.",
+      "Can we discuss how I have been feeling?"
+    ]
+  }
+];
+var BY_LEVEL2 = {
+  1: SYMPTOMS_CAT,
+  2: PHARMACY_CAT,
+  3: EMERGENCY_CAT,
+  4: HABITS_CAT,
+  5: APPOINTMENTS_CAT,
+  6: WELLNESS_CAT
+};
+function generateDoctorTurn(level, id) {
+  const index = (id % BANK_SIZE + BANK_SIZE) % BANK_SIZE;
+  const templates = BY_LEVEL2[level];
+  const template = templates[index % templates.length];
+  const ctx = makeCtx2(level, index);
+  const seed = level * 700019 + index * 131;
+  const [reply_1, reply_2, reply_3, reply_4, reply_5] = five2(template.replies(ctx), seed);
+  return {
+    id: index,
+    level,
+    bot_message: template.bot(ctx),
+    reply_1,
+    reply_2,
+    reply_3,
+    reply_4,
+    reply_5,
+    learning_goal: template.goal
+  };
 }
 
 // scripts/export-csv.ts
 var root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-var outDir = path.join(root, "csv");
-var FILES = [
+var HEADER = [
+  "bot_message",
+  "reply_1",
+  "reply_2",
+  "reply_3",
+  "reply_4",
+  "reply_5"
+];
+var ENGLISH_FILES = [
   { level: 1, file: "level-1-ages-3-5.csv" },
   { level: 2, file: "level-2-ages-6-8.csv" },
   { level: 3, file: "level-3-ages-9-10.csv" },
@@ -1691,27 +2035,26 @@ var FILES = [
   { level: 5, file: "level-5-ages-13-15.csv" },
   { level: 6, file: "level-6-ages-15-plus.csv" }
 ];
+var DOCTOR_FILES = Object.entries(DOCTOR_CSV_FILES).map(([level, file]) => ({ level: Number(level), file }));
 function csvCell(value) {
   const text = String(value ?? "");
   if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
   return text;
 }
-function writeLevel(level, filePath) {
+function writeBank(filePath, makeRow, level) {
   const stream = createWriteStream(filePath, { encoding: "utf8" });
   return new Promise((resolve, reject) => {
     stream.on("error", reject);
-    stream.write("question,answer\n");
+    stream.write(`${HEADER.join(",")}
+`);
     let index = 0;
     const chunkSize = 400;
     const pump = () => {
       let chunk = "";
       const end = Math.min(BANK_SIZE, index + chunkSize);
       for (; index < end; index++) {
-        const q = generateQuestion(level, index);
-        const question = q.passage ? `${q.passage} ${q.prompt}` : q.prompt;
-        const answer = q.answers[q.correctIndex] ?? "";
-        chunk += `${csvCell(question)},${csvCell(answer)}
-`;
+        chunk += makeRow(level, index).map(csvCell).join(",");
+        chunk += "\n";
       }
       const ok = stream.write(chunk);
       if (index >= BANK_SIZE) {
@@ -1724,17 +2067,55 @@ function writeLevel(level, filePath) {
     pump();
   });
 }
-await mkdir(outDir, { recursive: true });
-await unlink(path.join(outDir, "levels.csv")).catch(() => {
-});
-for (const item of FILES) {
-  const filePath = path.join(outDir, item.file);
-  const started = Date.now();
-  process.stdout.write(`Writing ${item.file}...
-`);
-  await writeLevel(item.level, filePath);
-  process.stdout.write(`Done ${item.file} in ${((Date.now() - started) / 1e3).toFixed(1)}s
-`);
+async function clearOldDoctorFiles(outDir) {
+  const files = await readdir(outDir).catch(() => []);
+  for (const file of files) {
+    if (file.startsWith("level-") && file.endsWith(".csv")) {
+      await unlink(path.join(outDir, file));
+    }
+  }
 }
-process.stdout.write(`Chat CSV files saved in ${outDir}
+async function exportMode(mode, files, makeRow) {
+  const outDir = path.join(root, "csv", mode);
+  await mkdir(outDir, { recursive: true });
+  if (mode === "doctor") await clearOldDoctorFiles(outDir);
+  for (const item of files) {
+    const filePath = path.join(outDir, item.file);
+    const started = Date.now();
+    process.stdout.write(`[${mode}] Writing ${item.file}...
 `);
+    await writeBank(filePath, makeRow, item.level);
+    process.stdout.write(
+      `[${mode}] Done ${item.file} in ${((Date.now() - started) / 1e3).toFixed(1)}s
+`
+    );
+  }
+}
+var only = process.argv[2];
+if (!only || only === "all" || only === "english") {
+  await exportMode("english", ENGLISH_FILES, (level, index) => {
+    const turn = generateChatTurn(level, index);
+    return [
+      turn.bot_message,
+      turn.reply_1,
+      turn.reply_2,
+      turn.reply_3,
+      turn.reply_4,
+      turn.reply_5
+    ];
+  });
+}
+if (!only || only === "all" || only === "doctor") {
+  await exportMode("doctor", DOCTOR_FILES, (level, index) => {
+    const turn = generateDoctorTurn(level, index);
+    return [
+      turn.bot_message,
+      turn.reply_1,
+      turn.reply_2,
+      turn.reply_3,
+      turn.reply_4,
+      turn.reply_5
+    ];
+  });
+}
+process.stdout.write("CSV export finished.\n");

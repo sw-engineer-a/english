@@ -1,0 +1,196 @@
+import type { LevelConfig, LevelId } from '../types'
+
+/** AI Doctor uses clinic topics, not age groups. `ages` holds the topic label. */
+export const DOCTOR_LEVELS: LevelConfig[] = [
+  {
+    id: 1,
+    title: 'Symptoms & Checkup',
+    ages: 'Clinic topic',
+    cefr: 'Beginner',
+    tagline: 'Practice telling a doctor how you feel.',
+    focus: ['I feel…', 'Pain location', 'Fever & cold', 'Simple checkup'],
+    tutor: {
+      name: 'Dr. Dot',
+      role: 'Symptoms English coach',
+      avatar: '🩺',
+      greeting:
+        'Hello! I am Dr. Dot. We will practice symptom English. This is language practice only, not real medical advice. Choose a reply.',
+      praise: ['Clear answer!', 'Good description.', 'Well said!', 'That helps a lot.', 'Nice work!'],
+      retry: ['Try another reply.', 'Choose a clearer option.', 'Let’s try again.'],
+      next: ['Next one!', 'Continue.', 'Another chat!', 'Ready?'],
+    },
+    theme: {
+      bg: '#e8f8f5',
+      bg2: '#d4f1f9',
+      accent: '#1abc9c',
+      accent2: '#3498db',
+      ink: '#1a3a3a',
+      card: '#ffffff',
+      bubble: '#f0fffb',
+      userBubble: '#e3f6ff',
+    },
+  },
+  {
+    id: 2,
+    title: 'Pharmacy & Medicine',
+    ages: 'Clinic topic',
+    cefr: 'Everyday',
+    tagline: 'Ask about medicine, doses, and pharmacy English.',
+    focus: ['Medicine names', 'How often', 'Side effects', 'Pharmacy talk'],
+    tutor: {
+      name: 'Dr. Pip',
+      role: 'Pharmacy English coach',
+      avatar: '💊',
+      greeting:
+        'Hello! I am Dr. Pip. We will practice pharmacy and medicine English. This is learning only—not real prescribing advice.',
+      praise: ['Clear answer!', 'Good detail.', 'Well done!', 'Natural pharmacy English.'],
+      retry: ['Try a clearer reply.', 'Choose another option.', 'Let’s try again.'],
+      next: ['Next chat!', 'Continue.', 'Another question.', 'Ready?'],
+    },
+    theme: {
+      bg: '#eef9ff',
+      bg2: '#e8fff3',
+      accent: '#0984e3',
+      accent2: '#00b894',
+      ink: '#12344a',
+      card: '#ffffff',
+      bubble: '#f5fbff',
+      userBubble: '#e8fff6',
+    },
+  },
+  {
+    id: 3,
+    title: 'First Aid & Emergency',
+    ages: 'Clinic topic',
+    cefr: 'Essential',
+    tagline: 'Practice urgent and safety conversations in English.',
+    focus: ['Cuts & bruises', 'Call for help', 'What to do first', 'Urgent signs'],
+    tutor: {
+      name: 'Dr. Sam',
+      role: 'First-aid English coach',
+      avatar: '🚑',
+      greeting:
+        'Hi! I’m Dr. Sam. We’ll practice first-aid and emergency English. For real emergencies, call local emergency services.',
+      praise: ['That’s a helpful reply.', 'Good safety English.', 'Clear and calm.', 'Well chosen.'],
+      retry: ['Choose a safer reply.', 'Try again.', 'Another option may fit better.'],
+      next: ['Next one.', 'Continue.', 'Another case.', 'Let’s keep going.'],
+    },
+    theme: {
+      bg: '#fff5f5',
+      bg2: '#ffe8e8',
+      accent: '#e74c3c',
+      accent2: '#c0392b',
+      ink: '#3d1b1b',
+      card: '#ffffff',
+      bubble: '#fff8f8',
+      userBubble: '#ffeaea',
+    },
+  },
+  {
+    id: 4,
+    title: 'Healthy Habits',
+    ages: 'Lifestyle topic',
+    cefr: 'Everyday',
+    tagline: 'Talk about sleep, food, exercise, and prevention.',
+    focus: ['Sleep', 'Food & water', 'Exercise', 'Prevention'],
+    tutor: {
+      name: 'Dr. Rivera',
+      role: 'Wellness English coach',
+      avatar: '🥗',
+      greeting:
+        'Welcome. I’m Dr. Rivera. We’ll practice healthy-habits English. This is language practice, not a personal health plan.',
+      praise: ['Natural reply.', 'Good habit English.', 'Clear and practical.', 'Well chosen.'],
+      retry: ['Pick a clearer reply.', 'Try another option.', 'Let’s refine that.'],
+      next: ['Next conversation.', 'Continue.', 'Another scenario.', 'Proceed.'],
+    },
+    theme: {
+      bg: '#f0faf4',
+      bg2: '#e8f4ff',
+      accent: '#27ae60',
+      accent2: '#2980b9',
+      ink: '#1b3d36',
+      card: '#ffffff',
+      bubble: '#f4fff8',
+      userBubble: '#eaf4ff',
+    },
+  },
+  {
+    id: 5,
+    title: 'Appointments & Follow-up',
+    ages: 'Clinic topic',
+    cefr: 'Clinic',
+    tagline: 'Book visits, ask questions, and plan follow-up care.',
+    focus: ['Booking', 'Waiting room', 'Questions', 'Follow-up'],
+    tutor: {
+      name: 'Dr. Alex',
+      role: 'Clinic visit English coach',
+      avatar: '📅',
+      greeting:
+        "Hey! I'm Dr. Alex. We'll practice appointment and follow-up English. This is for language learning only.",
+      praise: [
+        'That sounds natural.',
+        'Good clinic English.',
+        'Polite and clear.',
+        'Solid reply.',
+      ],
+      retry: ['Another reply fits better.', 'Try a clearer option.', 'Let’s adjust that.'],
+      next: ['Next one.', 'Keep going.', 'Another case.', 'Ready?'],
+    },
+    theme: {
+      bg: '#eef2ff',
+      bg2: '#e8fff8',
+      accent: '#5b5f97',
+      accent2: '#00cec9',
+      ink: '#1e1f3a',
+      card: '#ffffff',
+      bubble: '#f5f6ff',
+      userBubble: '#e9fffa',
+    },
+  },
+  {
+    id: 6,
+    title: 'Mental Wellness',
+    ages: 'Support topic',
+    cefr: 'Support',
+    tagline: 'Practice talking about stress, mood, and asking for help.',
+    focus: ['Stress', 'Sleep & mood', 'Asking for help', 'Support language'],
+    tutor: {
+      name: 'Dr. Morgan',
+      role: 'Wellness conversation coach',
+      avatar: '🧠',
+      greeting:
+        'Welcome. I’m Dr. Morgan. We’ll practice mental-wellness English. This is language practice only—not therapy or crisis care.',
+      praise: [
+        'Clear and respectful.',
+        'Good support English.',
+        'Thoughtful reply.',
+        'Well chosen.',
+      ],
+      retry: ['Choose a clearer reply.', 'A gentler option may fit.', 'Try again.'],
+      next: ['Continue.', 'Next item.', 'Another case.', 'Proceed.'],
+    },
+    theme: {
+      bg: '#f5f3ff',
+      bg2: '#eef2ff',
+      accent: '#7c3aed',
+      accent2: '#6366f1',
+      ink: '#2e1065',
+      card: '#ffffff',
+      bubble: '#faf5ff',
+      userBubble: '#eef2ff',
+    },
+  },
+]
+
+export const DOCTOR_CSV_FILES: Record<LevelId, string> = {
+  1: 'category-1-symptoms-checkup.csv',
+  2: 'category-2-pharmacy-medicine.csv',
+  3: 'category-3-first-aid-emergency.csv',
+  4: 'category-4-healthy-habits.csv',
+  5: 'category-5-appointments-followup.csv',
+  6: 'category-6-mental-wellness.csv',
+}
+
+export function getDoctorLevel(id: LevelId): LevelConfig {
+  return DOCTOR_LEVELS[id - 1]
+}

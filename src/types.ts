@@ -1,4 +1,5 @@
 export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
+export type AppMode = 'english' | 'doctor'
 
 export interface TutorPersona {
   name: string
@@ -62,3 +63,16 @@ export interface LevelStats {
 
 export const BANK_SIZE = 100_000
 export const CHOICES = 5
+
+export const MODE_LABELS: Record<AppMode, { title: string; subtitle: string; icon: string }> = {
+  english: {
+    title: 'English Learning',
+    subtitle: 'Practice everyday English chat by age level.',
+    icon: '📚',
+  },
+  doctor: {
+    title: 'AI Doctor',
+    subtitle: 'Practice health English by clinic topic. Not real medical advice.',
+    icon: '🩺',
+  },
+}

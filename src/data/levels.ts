@@ -13,7 +13,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Your playful English friend',
       avatar: '🐻',
       greeting:
-        'Hi, friend! I am Benny Bear. Let us play with English words! Listen, look, and pick one answer.',
+        'Hi, friend! I am Benny Bear. Let’s chat in English! I will say something, and you can choose a reply.',
       praise: [
         'Yes! Great job!',
         'Yay! You got it!',
@@ -52,7 +52,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Cheerful classroom tutor',
       avatar: '🐦',
       greeting:
-        'Hello! I am Miss Pip. We will chat in easy English. Read, listen, and choose the best answer.',
+        'Hello! I am Miss Pip. We will chat in easy English. I say something, then you choose a reply.',
       praise: [
         'Excellent! That’s right.',
         'Well done! You read that carefully.',
@@ -90,7 +90,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Story and grammar coach',
       avatar: '🦊',
       greeting:
-        'Hey there! I’m Coach Sam. We’ll read short stories and pick smart answers. You’ve got this!',
+        'Hey there! I’m Coach Sam. Let’s practice real chat. Pick a natural reply each time.',
       praise: [
         'That’s the one! Sharp thinking.',
         'Yes — you understood the story.',
@@ -128,7 +128,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Middle-school English mentor',
       avatar: '🦉',
       greeting:
-        'Welcome. I’m Ms. Rivera. We’ll practice natural English: plans, reasons, and conversations. Choose the most natural answer.',
+        'Welcome. I’m Ms. Rivera. We’ll practice natural conversations. Choose a reply that fits.',
       praise: [
         'Exactly. That’s natural English.',
         'Well reasoned. You used the context well.',
@@ -166,7 +166,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Teen English coach',
       avatar: '😎',
       greeting:
-        "Hey! I'm Alex. We'll chat like real people — school, hobbies, news, and stronger grammar. Pick the answer that sounds right.",
+        "Hey! I'm Alex. We'll chat like real teens. Pick the reply that sounds natural to you.",
       praise: [
         'Nailed it. That’s how a fluent speaker would say it.',
         'Yes. You caught the idiom.',
@@ -204,7 +204,7 @@ export const LEVELS: LevelConfig[] = [
       role: 'Advanced English coach',
       avatar: '🎓',
       greeting:
-        'Welcome. I’m Dr. Morgan. This level trains precise, adult English — collocations, tone, and academic choices. Select the best option, not merely a possible one.',
+        'Welcome. I’m Dr. Morgan. This level practices adult conversation. Choose a clear, natural reply.',
       praise: [
         'Correct. That is the most precise choice.',
         'Yes. The collocation is idiomatic.',

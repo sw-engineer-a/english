@@ -1,14 +1,24 @@
 import { createWriteStream } from 'node:fs'
-import { mkdir, unlink } from 'node:fs/promises'
+import { mkdir, readdir, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { generateQuestion } from '../src/engine/generate'
+import { DOCTOR_CSV_FILES } from '../src/data/doctorLevels'
+import { generateChatTurn } from '../src/engine/chatTurns'
+import { generateDoctorTurn } from '../src/engine/doctorTurns'
 import { BANK_SIZE, type LevelId } from '../src/types'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const outDir = path.join(root, 'csv')
 
-const FILES: { level: LevelId; file: string }[] = [
+const HEADER = [
+  'bot_message',
+  'reply_1',
+  'reply_2',
+  'reply_3',
+  'reply_4',
+  'reply_5',
+]
+
+const ENGLISH_FILES: { level: LevelId; file: string }[] = [
   { level: 1, file: 'level-1-ages-3-5.csv' },
   { level: 2, file: 'level-2-ages-6-8.csv' },
   { level: 3, file: 'level-3-ages-9-10.csv' },
@@ -17,18 +27,26 @@ const FILES: { level: LevelId; file: string }[] = [
   { level: 6, file: 'level-6-ages-15-plus.csv' },
 ]
 
+const DOCTOR_FILES: { level: LevelId; file: string }[] = (
+  Object.entries(DOCTOR_CSV_FILES) as [string, string][]
+).map(([level, file]) => ({ level: Number(level) as LevelId, file }))
+
 function csvCell(value: string | number): string {
   const text = String(value ?? '')
   if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`
   return text
 }
 
-function writeLevel(level: LevelId, filePath: string): Promise<void> {
+function writeBank(
+  filePath: string,
+  makeRow: (level: LevelId, index: number) => string[],
+  level: LevelId,
+): Promise<void> {
   const stream = createWriteStream(filePath, { encoding: 'utf8' })
 
   return new Promise((resolve, reject) => {
     stream.on('error', reject)
-    stream.write('question,answer\n')
+    stream.write(`${HEADER.join(',')}\n`)
 
     let index = 0
     const chunkSize = 400
@@ -37,10 +55,8 @@ function writeLevel(level: LevelId, filePath: string): Promise<void> {
       let chunk = ''
       const end = Math.min(BANK_SIZE, index + chunkSize)
       for (; index < end; index++) {
-        const q = generateQuestion(level, index)
-        const question = q.passage ? `${q.passage} ${q.prompt}` : q.prompt
-        const answer = q.answers[q.correctIndex] ?? ''
-        chunk += `${csvCell(question)},${csvCell(answer)}\n`
+        chunk += makeRow(level, index).map(csvCell).join(',')
+        chunk += '\n'
       }
 
       const ok = stream.write(chunk)
@@ -56,15 +72,63 @@ function writeLevel(level: LevelId, filePath: string): Promise<void> {
   })
 }
 
-await mkdir(outDir, { recursive: true })
-await unlink(path.join(outDir, 'levels.csv')).catch(() => {})
-
-for (const item of FILES) {
-  const filePath = path.join(outDir, item.file)
-  const started = Date.now()
-  process.stdout.write(`Writing ${item.file}...\n`)
-  await writeLevel(item.level, filePath)
-  process.stdout.write(`Done ${item.file} in ${((Date.now() - started) / 1000).toFixed(1)}s\n`)
+async function clearOldDoctorFiles(outDir: string) {
+  const files = await readdir(outDir).catch(() => [] as string[])
+  for (const file of files) {
+    if (file.startsWith('level-') && file.endsWith('.csv')) {
+      await unlink(path.join(outDir, file))
+    }
+  }
 }
 
-process.stdout.write(`Chat CSV files saved in ${outDir}\n`)
+async function exportMode(
+  mode: 'english' | 'doctor',
+  files: { level: LevelId; file: string }[],
+  makeRow: (level: LevelId, index: number) => string[],
+) {
+  const outDir = path.join(root, 'csv', mode)
+  await mkdir(outDir, { recursive: true })
+  if (mode === 'doctor') await clearOldDoctorFiles(outDir)
+
+  for (const item of files) {
+    const filePath = path.join(outDir, item.file)
+    const started = Date.now()
+    process.stdout.write(`[${mode}] Writing ${item.file}...\n`)
+    await writeBank(filePath, makeRow, item.level)
+    process.stdout.write(
+      `[${mode}] Done ${item.file} in ${((Date.now() - started) / 1000).toFixed(1)}s\n`,
+    )
+  }
+}
+
+const only = process.argv[2] // english | doctor | all
+
+if (!only || only === 'all' || only === 'english') {
+  await exportMode('english', ENGLISH_FILES, (level, index) => {
+    const turn = generateChatTurn(level, index)
+    return [
+      turn.bot_message,
+      turn.reply_1,
+      turn.reply_2,
+      turn.reply_3,
+      turn.reply_4,
+      turn.reply_5,
+    ]
+  })
+}
+
+if (!only || only === 'all' || only === 'doctor') {
+  await exportMode('doctor', DOCTOR_FILES, (level, index) => {
+    const turn = generateDoctorTurn(level, index)
+    return [
+      turn.bot_message,
+      turn.reply_1,
+      turn.reply_2,
+      turn.reply_3,
+      turn.reply_4,
+      turn.reply_5,
+    ]
+  })
+}
+
+process.stdout.write('CSV export finished.\n')

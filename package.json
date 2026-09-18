@@ -12,7 +12,7 @@
     "export:csv": "node scripts/export-csv.mjs",
     "export:english": "node scripts/export-csv.mjs english",
     "export:doctor": "node scripts/export-csv.mjs doctor",
-    "export:ages-6-8": "node scripts/export-english-age.mjs 6-8",
+    "export:ages-06-08": "node scripts/export-english-age.mjs 06-08",
     "export:ages-all": "node scripts/export-english-age.mjs all"
   },
   "dependencies": {

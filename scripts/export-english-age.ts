@@ -2,9 +2,9 @@
  * Export one English age level as a folder of split CSVs (GitHub-friendly).
  *
  * Usage:
- *   node scripts/export-english-age.mjs 6-8
+ *   node scripts/export-english-age.mjs 03-05
  *   node scripts/export-english-age.mjs all
- *   node scripts/export-english-age.mjs 6-8 --total=1000000 --rows=100000
+ *   node scripts/export-english-age.mjs 06-08 --total=1000000 --rows=100000
  */
 import { createWriteStream, writeFileSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
@@ -29,12 +29,22 @@ const HEADER = [
 ]
 
 const AGE_LEVELS: Record<string, { level: LevelId; folder: string }> = {
-  '3-5': { level: 1, folder: 'ages-3-5' },
-  '6-8': { level: 2, folder: 'ages-6-8' },
-  '9-10': { level: 3, folder: 'ages-9-10' },
+  '03-05': { level: 1, folder: 'ages-03-05' },
+  '06-08': { level: 2, folder: 'ages-06-08' },
+  '09-10': { level: 3, folder: 'ages-09-10' },
   '11-12': { level: 4, folder: 'ages-11-12' },
   '13-15': { level: 5, folder: 'ages-13-15' },
   '15-plus': { level: 6, folder: 'ages-15-plus' },
+}
+
+/** Accept both 3-5 and 03-05 style keys. */
+function normalizeAgeKey(raw: string): string {
+  const aliases: Record<string, string> = {
+    '3-5': '03-05',
+    '6-8': '06-08',
+    '9-10': '09-10',
+  }
+  return aliases[raw] ?? raw
 }
 
 function csvCell(value: string | number): string {
@@ -44,7 +54,8 @@ function csvCell(value: string | number): string {
 }
 
 function parseArgs(argv: string[]) {
-  const ageKey = argv[2]
+  const rawKey = argv[2]
+  const ageKey = rawKey ? normalizeAgeKey(rawKey) : rawKey
   let total = 1_000_000
   let rowsPerFile = 100_000
 

@@ -1,10 +1,10 @@
-// scripts/export-english-age.ts
+// ../../scripts/export-english-age.ts
 import { createWriteStream, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// src/data/banks.ts
+// ../../src/data/banks.ts
 var NAMES = [
   "Mia",
   "Leo",
@@ -257,10 +257,10 @@ var L2_OBJECTS = [
   "gift"
 ];
 
-// src/types.ts
+// ../../src/types.ts
 var BANK_SIZE = 1e5;
 
-// src/engine/rng.ts
+// ../../src/engine/rng.ts
 function mulberry32(seed) {
   let a = seed | 0;
   return () => {
@@ -291,13 +291,13 @@ function pick(list, index) {
   return list[(index % list.length + list.length) % list.length];
 }
 
-// src/engine/helpers.ts
+// ../../src/engine/helpers.ts
 function cap(text) {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// src/engine/topics.ts
+// ../../src/engine/topics.ts
 function build(names) {
   return names.map((name, i) => ({ id: i + 1, name }));
 }
@@ -518,7 +518,7 @@ function topicId(level, name) {
 }
 var TOPICS = TOPICS_BY_LEVEL[2];
 
-// src/engine/categories.ts
+// ../../src/engine/categories.ts
 function T(level, a, b, c) {
   return [topicId(level, a), topicId(level, b), topicId(level, c)];
 }
@@ -1061,7 +1061,7 @@ function topicsForGoal(goal, index = 0, level = 2) {
   };
 }
 
-// src/engine/chatTurns.ts
+// ../../src/engine/chatTurns.ts
 var SUBJECTS = [
   "math",
   "English",
@@ -2017,7 +2017,7 @@ function generateChatTurn(level, id, bankSize = BANK_SIZE) {
   };
 }
 
-// scripts/export-english-age.ts
+// ../../scripts/export-english-age.ts
 var root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 var HEADER = [
   "bot_message",
@@ -2031,20 +2031,29 @@ var HEADER = [
   "topic3"
 ];
 var AGE_LEVELS = {
-  "3-5": { level: 1, folder: "ages-3-5" },
-  "6-8": { level: 2, folder: "ages-6-8" },
-  "9-10": { level: 3, folder: "ages-9-10" },
+  "03-05": { level: 1, folder: "ages-03-05" },
+  "06-08": { level: 2, folder: "ages-06-08" },
+  "09-10": { level: 3, folder: "ages-09-10" },
   "11-12": { level: 4, folder: "ages-11-12" },
   "13-15": { level: 5, folder: "ages-13-15" },
   "15-plus": { level: 6, folder: "ages-15-plus" }
 };
+function normalizeAgeKey(raw) {
+  const aliases = {
+    "3-5": "03-05",
+    "6-8": "06-08",
+    "9-10": "09-10"
+  };
+  return aliases[raw] ?? raw;
+}
 function csvCell(value) {
   const text = String(value ?? "");
   if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
   return text;
 }
 function parseArgs(argv) {
-  const ageKey = argv[2];
+  const rawKey = argv[2];
+  const ageKey = rawKey ? normalizeAgeKey(rawKey) : rawKey;
   let total2 = 1e6;
   let rowsPerFile2 = 1e5;
   for (const arg of argv.slice(3)) {

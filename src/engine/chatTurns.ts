@@ -17,6 +17,7 @@ import {
 } from '../data/banks'
 import { BANK_SIZE, type LevelId } from '../types'
 import { cap } from './helpers'
+import { topicsForGoal } from './categories'
 import { decodeIndex, mulberry32, pick, shuffle } from './rng'
 
 export interface ChatTurn {
@@ -28,7 +29,9 @@ export interface ChatTurn {
   reply_3: string
   reply_4: string
   reply_5: string
-  learning_goal: string
+  topic1: number
+  topic2: number
+  topic3: number
 }
 
 type Template = {
@@ -1006,13 +1009,15 @@ const BY_LEVEL: Record<LevelId, Template[]> = {
   6: [...L5, ...L6],
 }
 
-export function generateChatTurn(level: LevelId, id: number): ChatTurn {
-  const index = ((id % BANK_SIZE) + BANK_SIZE) % BANK_SIZE
+export function generateChatTurn(level: LevelId, id: number, bankSize = BANK_SIZE): ChatTurn {
+  const size = Math.max(1, Math.floor(bankSize))
+  const index = ((id % size) + size) % size
   const templates = BY_LEVEL[level]
   const template = templates[index % templates.length]
   const ctx = makeCtx(level, index)
   const seed = level * 1_000_003 + index * 97
   const [reply_1, reply_2, reply_3, reply_4, reply_5] = five(template.replies(ctx), seed)
+  const topics = topicsForGoal(template.goal, index, level)
 
   return {
     id: index,
@@ -1023,6 +1028,8 @@ export function generateChatTurn(level: LevelId, id: number): ChatTurn {
     reply_3,
     reply_4,
     reply_5,
-    learning_goal: template.goal,
+    topic1: topics.topic1,
+    topic2: topics.topic2,
+    topic3: topics.topic3,
   }
 }

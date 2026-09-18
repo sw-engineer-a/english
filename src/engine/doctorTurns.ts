@@ -11,7 +11,7 @@ export interface DoctorTurn {
   reply_3: string
   reply_4: string
   reply_5: string
-  learning_goal: string
+  conversation_category: string
 }
 
 type Ctx = {
@@ -805,7 +805,7 @@ export function generateDoctorTurn(level: LevelId, id: number): DoctorTurn {
     reply_3,
     reply_4,
     reply_5,
-    learning_goal: template.goal,
+    conversation_category: template.goal,
   }
 }
 

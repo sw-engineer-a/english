@@ -1,5 +1,5 @@
 // scripts/export-csv.ts
-import { createWriteStream } from "node:fs";
+import { createWriteStream, writeFileSync } from "node:fs";
 import { mkdir, readdir, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -305,6 +305,451 @@ function pick(list, index) {
 function cap(text) {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// src/engine/topics.ts
+var TOPICS = [
+  { id: 1, name: "at home" },
+  { id: 2, name: "at school" },
+  { id: 3, name: "on the way to school" },
+  { id: 4, name: "on the way from school" },
+  { id: 5, name: "after school" },
+  { id: 6, name: "before school" },
+  { id: 7, name: "in the classroom" },
+  { id: 8, name: "during break" },
+  { id: 9, name: "at lunch" },
+  { id: 10, name: "at the library" },
+  { id: 11, name: "near the library" },
+  { id: 12, name: "at the park" },
+  { id: 13, name: "at the playground" },
+  { id: 14, name: "at the shop" },
+  { id: 15, name: "at the zoo" },
+  { id: 16, name: "on a farm" },
+  { id: 17, name: "at a caf\xE9" },
+  { id: 18, name: "at a restaurant" },
+  { id: 19, name: "at a sports club" },
+  { id: 20, name: "at a party" },
+  { id: 21, name: "at a family party" },
+  { id: 22, name: "in the living room" },
+  { id: 23, name: "in the kitchen" },
+  { id: 24, name: "outside" },
+  { id: 25, name: "in town" },
+  { id: 26, name: "on the bus" },
+  { id: 27, name: "on a trip" },
+  { id: 28, name: "at the airport" },
+  { id: 29, name: "online" },
+  { id: 30, name: "at work" },
+  { id: 31, name: "at the office" },
+  { id: 32, name: "in a meeting" },
+  { id: 33, name: "at an interview" },
+  { id: 34, name: "at university" },
+  { id: 35, name: "in a seminar" },
+  { id: 36, name: "with family" },
+  { id: 37, name: "with friends" },
+  { id: 38, name: "with classmates" },
+  { id: 39, name: "with colleagues" },
+  { id: 40, name: "with a client" },
+  { id: 41, name: "morning" },
+  { id: 42, name: "afternoon" },
+  { id: 43, name: "evening" },
+  { id: 44, name: "weekend" },
+  { id: 45, name: "Friday" },
+  { id: 46, name: "daytime" },
+  { id: 47, name: "mealtime" },
+  { id: 48, name: "dinner" },
+  { id: 49, name: "playtime" },
+  { id: 50, name: "free time" },
+  { id: 51, name: "bedtime" },
+  { id: 52, name: "shopping" },
+  { id: 53, name: "art time" },
+  { id: 54, name: "math time" },
+  { id: 55, name: "lesson time" },
+  { id: 56, name: "counting" },
+  { id: 57, name: "looking outside" },
+  { id: 58, name: "sharing" },
+  { id: 59, name: "discussion" },
+  { id: 60, name: "routine" },
+  { id: 61, name: "before a test" },
+  { id: 62, name: "group work" },
+  { id: 63, name: "homework" },
+  { id: 64, name: "studying" },
+  { id: 65, name: "study group" },
+  { id: 66, name: "study meetup" },
+  { id: 67, name: "class discussion" },
+  { id: 68, name: "project work" },
+  { id: 69, name: "project planning" },
+  { id: 70, name: "planning a trip" },
+  { id: 71, name: "holiday" },
+  { id: 72, name: "travel" },
+  { id: 73, name: "daily life" },
+  { id: 74, name: "professional" },
+  { id: 75, name: "formal talk" },
+  { id: 76, name: "career talk" },
+  { id: 77, name: "job interview" },
+  { id: 78, name: "video interview" },
+  { id: 79, name: "work call" },
+  { id: 80, name: "work email" },
+  { id: 81, name: "team call" },
+  { id: 82, name: "group chat" },
+  { id: 83, name: "emailing a professor" },
+  { id: 84, name: "writing to a manager" },
+  { id: 85, name: "professional message" },
+  { id: 86, name: "after a meeting" }
+];
+var BY_ID = new Map(TOPICS.map((t) => [t.id, t.name]));
+var BY_NAME = new Map(TOPICS.map((t) => [t.name, t.id]));
+function topicId(name) {
+  const id = BY_NAME.get(name);
+  if (id == null) throw new Error(`Unknown topic: ${name}`);
+  return id;
+}
+
+// src/engine/categories.ts
+function T(a, b, c) {
+  return [topicId(a), topicId(b), topicId(c)];
+}
+var SITUATIONS = {
+  "Speaking and introductions": [
+    T("at home", "with family", "morning"),
+    T("at school", "in the classroom", "with friends"),
+    T("on the way to school", "with friends", "morning"),
+    T("on the way from school", "after school", "with friends"),
+    T("at the park", "with friends", "afternoon")
+  ],
+  Colors: [
+    T("at home", "in the living room", "with family"),
+    T("at school", "in the classroom", "art time"),
+    T("at the park", "outside", "with friends"),
+    T("at the shop", "with family", "shopping")
+  ],
+  Animals: [
+    T("at the zoo", "with family", "weekend"),
+    T("at the park", "outside", "with friends"),
+    T("at home", "with family", "playtime"),
+    T("on a farm", "with family", "weekend")
+  ],
+  Food: [
+    T("at home", "in the kitchen", "mealtime"),
+    T("at school", "at lunch", "with friends"),
+    T("at a caf\xE9", "with family", "afternoon"),
+    T("at a restaurant", "with family", "dinner")
+  ],
+  "Toys and play": [
+    T("at home", "playtime", "with family"),
+    T("at the playground", "with friends", "after school"),
+    T("at the park", "outside", "weekend"),
+    T("at school", "during break", "with friends")
+  ],
+  Numbers: [
+    T("at school", "in the classroom", "math time"),
+    T("at home", "with family", "playtime"),
+    T("at the shop", "shopping", "with family"),
+    T("on the way to school", "counting", "morning")
+  ],
+  Family: [
+    T("at home", "with family", "evening"),
+    T("at home", "in the living room", "weekend"),
+    T("at a family party", "with family", "weekend"),
+    T("on the way from school", "with family", "afternoon")
+  ],
+  Places: [
+    T("on the way to school", "outside", "morning"),
+    T("at the park", "with friends", "afternoon"),
+    T("at home", "with family", "evening"),
+    T("at school", "after school", "with friends"),
+    T("on a trip", "with family", "weekend")
+  ],
+  Actions: [
+    T("at the playground", "with friends", "after school"),
+    T("at the park", "outside", "weekend"),
+    T("at home", "playtime", "with family"),
+    T("at school", "during break", "with friends")
+  ],
+  "Polite talk": [
+    T("at home", "with family", "mealtime"),
+    T("at school", "in the classroom", "with friends"),
+    T("at the shop", "shopping", "with family"),
+    T("at a caf\xE9", "with friends", "afternoon")
+  ],
+  "School vocabulary": [
+    T("at school", "in the classroom", "morning"),
+    T("on the way to school", "with friends", "morning"),
+    T("at school", "during break", "with friends"),
+    T("on the way from school", "after school", "with friends")
+  ],
+  "Daily talk": [
+    T("at home", "morning", "with family"),
+    T("on the way to school", "morning", "with friends"),
+    T("at school", "in the classroom", "morning"),
+    T("on the way from school", "afternoon", "after school")
+  ],
+  Weather: [
+    T("outside", "on the way to school", "morning"),
+    T("at the park", "outside", "afternoon"),
+    T("on the way from school", "outside", "afternoon"),
+    T("at home", "looking outside", "morning")
+  ],
+  "Food and likes": [
+    T("at home", "in the kitchen", "mealtime"),
+    T("at school", "at lunch", "with friends"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("at a restaurant", "with family", "dinner")
+  ],
+  Hobbies: [
+    T("at home", "free time", "after school"),
+    T("at a sports club", "with friends", "afternoon"),
+    T("at the park", "weekend", "with friends"),
+    T("at school", "during break", "with friends")
+  ],
+  "Past experiences": [
+    T("at home", "evening", "with family"),
+    T("at school", "in the classroom", "sharing"),
+    T("on the way from school", "with friends", "afternoon"),
+    T("at the park", "weekend", "with friends")
+  ],
+  "School life": [
+    T("at school", "in the classroom", "afternoon"),
+    T("on the way from school", "after school", "with friends"),
+    T("at school", "during break", "with friends"),
+    T("at home", "after school", "with family")
+  ],
+  "Reasons and because": [
+    T("at school", "in the classroom", "with friends"),
+    T("at home", "with family", "evening"),
+    T("on the way to school", "with friends", "morning"),
+    T("at the park", "with friends", "weekend")
+  ],
+  Comparisons: [
+    T("at school", "in the classroom", "lesson time"),
+    T("at the zoo", "with family", "weekend"),
+    T("at home", "with family", "playtime"),
+    T("at the park", "outside", "with friends")
+  ],
+  Feelings: [
+    T("at home", "with family", "evening"),
+    T("at school", "in the classroom", "morning"),
+    T("on the way to school", "morning", "with friends"),
+    T("after school", "at home", "with family")
+  ],
+  "Weekend plans": [
+    T("at home", "weekend", "with family"),
+    T("at school", "Friday", "with friends"),
+    T("on the way from school", "Friday", "with friends"),
+    T("at a caf\xE9", "weekend", "with friends")
+  ],
+  "Food and preferences": [
+    T("at home", "mealtime", "with family"),
+    T("at a restaurant", "dinner", "with family"),
+    T("at school", "at lunch", "with friends"),
+    T("at a caf\xE9", "afternoon", "with friends")
+  ],
+  Directions: [
+    T("on the way to school", "outside", "morning"),
+    T("at school", "near the library", "with friends"),
+    T("in town", "outside", "afternoon"),
+    T("on the way from school", "outside", "after school")
+  ],
+  Stories: [
+    T("at school", "in the classroom", "with friends"),
+    T("at home", "with family", "evening"),
+    T("at the library", "after school", "with friends"),
+    T("on the way from school", "with friends", "afternoon")
+  ],
+  Opinions: [
+    T("at school", "in the classroom", "discussion"),
+    T("at home", "with family", "evening"),
+    T("with friends", "after school", "at a caf\xE9"),
+    T("online", "with friends", "evening")
+  ],
+  "Daily routines": [
+    T("at home", "morning", "before school"),
+    T("on the way to school", "morning", "routine"),
+    T("at home", "evening", "bedtime"),
+    T("at school", "morning", "in the classroom")
+  ],
+  Conversations: [
+    T("at home", "evening", "with family"),
+    T("at school", "after school", "with friends"),
+    T("at a caf\xE9", "afternoon", "with friends"),
+    T("on the way from school", "with friends", "afternoon")
+  ],
+  "First conditional": [
+    T("at school", "in the classroom", "lesson time"),
+    T("at home", "weekend", "with family"),
+    T("outside", "on the way to school", "morning"),
+    T("at the park", "weekend", "with friends")
+  ],
+  "Opinions and reasons": [
+    T("at school", "in the classroom", "discussion"),
+    T("at home", "with family", "evening"),
+    T("with friends", "at a caf\xE9", "afternoon"),
+    T("online", "with friends", "evening")
+  ],
+  Advice: [
+    T("at school", "with friends", "before a test"),
+    T("at home", "with family", "evening"),
+    T("on the way to school", "with friends", "morning"),
+    T("after school", "at a caf\xE9", "with friends")
+  ],
+  "Phrasal verbs": [
+    T("at school", "with friends", "during break"),
+    T("at home", "with family", "evening"),
+    T("on the way from school", "with friends", "afternoon"),
+    T("at a caf\xE9", "with friends", "afternoon")
+  ],
+  "School projects": [
+    T("at school", "in the classroom", "group work"),
+    T("at the library", "after school", "with friends"),
+    T("at home", "evening", "homework"),
+    T("online", "with classmates", "evening")
+  ],
+  "Making suggestions": [
+    T("at school", "after school", "with friends"),
+    T("on the way from school", "with friends", "afternoon"),
+    T("at home", "weekend", "with family"),
+    T("at a caf\xE9", "with friends", "afternoon")
+  ],
+  "Describing people": [
+    T("at school", "in the classroom", "with friends"),
+    T("at home", "with family", "evening"),
+    T("at a party", "with friends", "weekend"),
+    T("on the way to school", "with friends", "morning")
+  ],
+  "Travel talk": [
+    T("on a trip", "with family", "holiday"),
+    T("at home", "planning a trip", "weekend"),
+    T("at school", "in the classroom", "sharing"),
+    T("at the airport", "with family", "travel")
+  ],
+  "Problem solving": [
+    T("at school", "with friends", "during break"),
+    T("on the bus", "on the way to school", "morning"),
+    T("at home", "with family", "evening"),
+    T("in town", "outside", "afternoon")
+  ],
+  "Teen conversation": [
+    T("at school", "during break", "with friends"),
+    T("after school", "at a caf\xE9", "with friends"),
+    T("at home", "evening", "online"),
+    T("on the way from school", "with friends", "afternoon")
+  ],
+  "Idioms in chat": [
+    T("at school", "with friends", "during break"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("online", "with friends", "evening"),
+    T("at home", "with family", "evening")
+  ],
+  "School stress": [
+    T("at school", "before a test", "with friends"),
+    T("at home", "evening", "homework"),
+    T("on the way to school", "morning", "with friends"),
+    T("at the library", "after school", "studying")
+  ],
+  "Hobbies and identity": [
+    T("at a sports club", "after school", "with friends"),
+    T("at home", "free time", "evening"),
+    T("at school", "during break", "with friends"),
+    T("at the park", "weekend", "with friends")
+  ],
+  "Agreeing and disagreeing": [
+    T("at school", "in the classroom", "discussion"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("online", "with friends", "evening"),
+    T("at home", "with family", "evening")
+  ],
+  "Problem talk": [
+    T("at school", "group work", "with classmates"),
+    T("at home", "with family", "evening"),
+    T("online", "with classmates", "evening"),
+    T("at the library", "after school", "project work")
+  ],
+  "Future goals": [
+    T("at school", "in the classroom", "discussion"),
+    T("at home", "with family", "evening"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("online", "career talk", "evening")
+  ],
+  "News and society": [
+    T("at school", "in the classroom", "discussion"),
+    T("at home", "with family", "evening"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("online", "with friends", "evening")
+  ],
+  "Everyday English": [
+    T("after school", "with friends", "at a caf\xE9"),
+    T("on the way from school", "with friends", "afternoon"),
+    T("at home", "evening", "with family"),
+    T("in town", "weekend", "with friends")
+  ],
+  "Professional English": [
+    T("at work", "in a meeting", "morning"),
+    T("at an interview", "professional", "daytime"),
+    T("at the office", "with colleagues", "afternoon"),
+    T("online", "work call", "morning")
+  ],
+  "Meetings and collaboration": [
+    T("at work", "in a meeting", "morning"),
+    T("at the office", "with colleagues", "afternoon"),
+    T("online", "team call", "morning"),
+    T("at work", "project planning", "daytime")
+  ],
+  "Academic discussion": [
+    T("at university", "in a seminar", "daytime"),
+    T("at the library", "study group", "afternoon"),
+    T("online", "class discussion", "evening"),
+    T("at a caf\xE9", "study meetup", "afternoon")
+  ],
+  "Register and tone": [
+    T("at university", "emailing a professor", "daytime"),
+    T("at work", "writing to a manager", "morning"),
+    T("at the office", "formal talk", "daytime"),
+    T("online", "professional message", "evening")
+  ],
+  "Workplace chat": [
+    T("at work", "with a client", "daytime"),
+    T("at the office", "with colleagues", "afternoon"),
+    T("online", "work email", "morning"),
+    T("in a meeting", "professional", "daytime")
+  ],
+  "Debate and nuance": [
+    T("at university", "in a seminar", "discussion"),
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("online", "group chat", "evening"),
+    T("at work", "in a meeting", "daytime")
+  ],
+  "Collocations in context": [
+    T("at work", "in a meeting", "daytime"),
+    T("at university", "in a seminar", "discussion"),
+    T("at a caf\xE9", "with classmates", "afternoon"),
+    T("online", "study group", "evening")
+  ],
+  "Interview English": [
+    T("at an interview", "professional", "daytime"),
+    T("at the office", "job interview", "morning"),
+    T("online", "video interview", "daytime"),
+    T("at work", "career talk", "afternoon")
+  ],
+  "Social English": [
+    T("at a caf\xE9", "with friends", "afternoon"),
+    T("at a party", "with friends", "evening"),
+    T("at work", "after a meeting", "daytime"),
+    T("online", "with friends", "evening")
+  ]
+};
+var FALLBACK = [
+  T("at home", "with family", "daily life"),
+  T("at school", "with friends", "daily life"),
+  T("on the way to school", "morning", "with friends"),
+  T("on the way from school", "after school", "with friends")
+];
+function topicsForGoal(goal, index = 0) {
+  const pool = SITUATIONS[goal] ?? FALLBACK;
+  const triple = pool[(index % pool.length + pool.length) % pool.length];
+  return {
+    topic1: triple[0],
+    topic2: triple[1],
+    topic3: triple[2]
+  };
 }
 
 // src/engine/chatTurns.ts
@@ -1246,6 +1691,7 @@ function generateChatTurn(level, id) {
   const ctx = makeCtx(level, index);
   const seed = level * 1000003 + index * 97;
   const [reply_1, reply_2, reply_3, reply_4, reply_5] = five(template.replies(ctx), seed);
+  const topics = topicsForGoal(template.goal, index);
   return {
     id: index,
     level,
@@ -1255,7 +1701,9 @@ function generateChatTurn(level, id) {
     reply_3,
     reply_4,
     reply_5,
-    learning_goal: template.goal
+    topic1: topics.topic1,
+    topic2: topics.topic2,
+    topic3: topics.topic3
   };
 }
 
@@ -2013,13 +2461,24 @@ function generateDoctorTurn(level, id) {
     reply_3,
     reply_4,
     reply_5,
-    learning_goal: template.goal
+    conversation_category: template.goal
   };
 }
 
 // scripts/export-csv.ts
 var root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-var HEADER = [
+var ENGLISH_HEADER = [
+  "bot_message",
+  "reply_1",
+  "reply_2",
+  "reply_3",
+  "reply_4",
+  "reply_5",
+  "topic1",
+  "topic2",
+  "topic3"
+];
+var DOCTOR_HEADER = [
   "bot_message",
   "reply_1",
   "reply_2",
@@ -2041,11 +2500,11 @@ function csvCell(value) {
   if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
   return text;
 }
-function writeBank(filePath, makeRow, level) {
+function writeBank(filePath, header, makeRow, level) {
   const stream = createWriteStream(filePath, { encoding: "utf8" });
   return new Promise((resolve, reject) => {
     stream.on("error", reject);
-    stream.write(`${HEADER.join(",")}
+    stream.write(`${header.join(",")}
 `);
     let index = 0;
     const chunkSize = 400;
@@ -2075,7 +2534,7 @@ async function clearOldDoctorFiles(outDir) {
     }
   }
 }
-async function exportMode(mode, files, makeRow) {
+async function exportMode(mode, files, header, makeRow) {
   const outDir = path.join(root, "csv", mode);
   await mkdir(outDir, { recursive: true });
   if (mode === "doctor") await clearOldDoctorFiles(outDir);
@@ -2084,7 +2543,7 @@ async function exportMode(mode, files, makeRow) {
     const started = Date.now();
     process.stdout.write(`[${mode}] Writing ${item.file}...
 `);
-    await writeBank(filePath, makeRow, item.level);
+    await writeBank(filePath, header, makeRow, item.level);
     process.stdout.write(
       `[${mode}] Done ${item.file} in ${((Date.now() - started) / 1e3).toFixed(1)}s
 `
@@ -2093,7 +2552,17 @@ async function exportMode(mode, files, makeRow) {
 }
 var only = process.argv[2];
 if (!only || only === "all" || only === "english") {
-  await exportMode("english", ENGLISH_FILES, (level, index) => {
+  const englishDir = path.join(root, "csv", "english");
+  await mkdir(englishDir, { recursive: true });
+  const topicsPath = path.join(englishDir, "topics.csv");
+  const topicsCsv = ["topic_id,topic", ...TOPICS.map((t) => `${t.id},${csvCell(t.name)}`)].join(
+    "\n"
+  );
+  writeFileSync(topicsPath, `${topicsCsv}
+`, "utf8");
+  process.stdout.write(`[english] Wrote topics.csv (${TOPICS.length} topics)
+`);
+  await exportMode("english", ENGLISH_FILES, ENGLISH_HEADER, (level, index) => {
     const turn = generateChatTurn(level, index);
     return [
       turn.bot_message,
@@ -2101,12 +2570,15 @@ if (!only || only === "all" || only === "english") {
       turn.reply_2,
       turn.reply_3,
       turn.reply_4,
-      turn.reply_5
+      turn.reply_5,
+      String(turn.topic1),
+      String(turn.topic2),
+      String(turn.topic3)
     ];
   });
 }
 if (!only || only === "all" || only === "doctor") {
-  await exportMode("doctor", DOCTOR_FILES, (level, index) => {
+  await exportMode("doctor", DOCTOR_FILES, DOCTOR_HEADER, (level, index) => {
     const turn = generateDoctorTurn(level, index);
     return [
       turn.bot_message,

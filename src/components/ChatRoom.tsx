@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { loadLevelCsv, type ChatTurn } from '../csv/loadLevelCsv'
 import { getDoctorLevel } from '../data/doctorLevels'
 import { getLevel } from '../data/levels'
+import { resolveTopicIds } from '../engine/topics'
 import { speak, stopSpeaking } from '../speech'
 import { recordAnswer, type ModeStats } from '../storage'
 import type { AppMode, ChatMessage, LevelId } from '../types'
@@ -246,7 +247,16 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
         <div className="jump-row">
           <span>
             {turn
-              ? `Session ${session.chats}`
+              ? [
+                  mode === 'english'
+                    ? resolveTopicIds(levelId, [turn.topic1, turn.topic2, turn.topic3]).join(
+                        ' · ',
+                      ) || null
+                    : null,
+                  `Session ${session.chats}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
               : loading
                 ? 'Loading CSV…'
                 : 'CSV not ready'}

@@ -1,15 +1,28 @@
-import { createWriteStream } from 'node:fs'
+import { createWriteStream, writeFileSync } from 'node:fs'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DOCTOR_CSV_FILES } from '../src/data/doctorLevels'
 import { generateChatTurn } from '../src/engine/chatTurns'
 import { generateDoctorTurn } from '../src/engine/doctorTurns'
+import { getTopics } from '../src/engine/topics'
 import { BANK_SIZE, type LevelId } from '../src/types'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-const HEADER = [
+const ENGLISH_HEADER = [
+  'bot_message',
+  'reply_1',
+  'reply_2',
+  'reply_3',
+  'reply_4',
+  'reply_5',
+  'topic1',
+  'topic2',
+  'topic3',
+]
+
+const DOCTOR_HEADER = [
   'bot_message',
   'reply_1',
   'reply_2',
@@ -39,6 +52,7 @@ function csvCell(value: string | number): string {
 
 function writeBank(
   filePath: string,
+  header: string[],
   makeRow: (level: LevelId, index: number) => string[],
   level: LevelId,
 ): Promise<void> {
@@ -46,7 +60,7 @@ function writeBank(
 
   return new Promise((resolve, reject) => {
     stream.on('error', reject)
-    stream.write(`${HEADER.join(',')}\n`)
+    stream.write(`${header.join(',')}\n`)
 
     let index = 0
     const chunkSize = 400
@@ -84,6 +98,7 @@ async function clearOldDoctorFiles(outDir: string) {
 async function exportMode(
   mode: 'english' | 'doctor',
   files: { level: LevelId; file: string }[],
+  header: string[],
   makeRow: (level: LevelId, index: number) => string[],
 ) {
   const outDir = path.join(root, 'csv', mode)
@@ -94,7 +109,7 @@ async function exportMode(
     const filePath = path.join(outDir, item.file)
     const started = Date.now()
     process.stdout.write(`[${mode}] Writing ${item.file}...\n`)
-    await writeBank(filePath, makeRow, item.level)
+    await writeBank(filePath, header, makeRow, item.level)
     process.stdout.write(
       `[${mode}] Done ${item.file} in ${((Date.now() - started) / 1000).toFixed(1)}s\n`,
     )
@@ -104,7 +119,17 @@ async function exportMode(
 const only = process.argv[2] // english | doctor | all
 
 if (!only || only === 'all' || only === 'english') {
-  await exportMode('english', ENGLISH_FILES, (level, index) => {
+  const englishDir = path.join(root, 'csv', 'english')
+  await mkdir(englishDir, { recursive: true })
+  const topicsPath = path.join(englishDir, 'topics.csv')
+  const topics = getTopics(2)
+  const topicsCsv = ['topic_id,topic', ...topics.map((t) => `${t.id},${csvCell(t.name)}`)].join(
+    '\n',
+  )
+  writeFileSync(topicsPath, `${topicsCsv}\n`, 'utf8')
+  process.stdout.write(`[english] Wrote topics.csv (${topics.length} topics)\n`)
+
+  await exportMode('english', ENGLISH_FILES, ENGLISH_HEADER, (level, index) => {
     const turn = generateChatTurn(level, index)
     return [
       turn.bot_message,
@@ -113,12 +138,15 @@ if (!only || only === 'all' || only === 'english') {
       turn.reply_3,
       turn.reply_4,
       turn.reply_5,
+      String(turn.topic1),
+      String(turn.topic2),
+      String(turn.topic3),
     ]
   })
 }
 
 if (!only || only === 'all' || only === 'doctor') {
-  await exportMode('doctor', DOCTOR_FILES, (level, index) => {
+  await exportMode('doctor', DOCTOR_FILES, DOCTOR_HEADER, (level, index) => {
     const turn = generateDoctorTurn(level, index)
     return [
       turn.bot_message,

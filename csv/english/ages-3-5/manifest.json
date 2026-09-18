@@ -1,0 +1,32 @@
+{
+  "ages": "3-5",
+  "level": 1,
+  "total_rows": 1000000,
+  "rows_per_file": 100000,
+  "part_count": 10,
+  "columns": [
+    "bot_message",
+    "reply_1",
+    "reply_2",
+    "reply_3",
+    "reply_4",
+    "reply_5",
+    "topic1",
+    "topic2",
+    "topic3"
+  ],
+  "topics_file": "topics.csv",
+  "topic_count": 30,
+  "files": [
+    "part-01.csv",
+    "part-02.csv",
+    "part-03.csv",
+    "part-04.csv",
+    "part-05.csv",
+    "part-06.csv",
+    "part-07.csv",
+    "part-08.csv",
+    "part-09.csv",
+    "part-10.csv"
+  ]
+}

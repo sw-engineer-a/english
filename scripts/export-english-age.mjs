@@ -1,10 +1,10 @@
-// ../../scripts/export-english-age.ts
+// scripts/export-english-age.ts
 import { createWriteStream, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// ../../src/data/banks.ts
+// src/data/banks.ts
 var NAMES = [
   "Mia",
   "Leo",
@@ -257,10 +257,10 @@ var L2_OBJECTS = [
   "gift"
 ];
 
-// ../../src/types.ts
+// src/types.ts
 var BANK_SIZE = 1e5;
 
-// ../../src/engine/rng.ts
+// src/engine/rng.ts
 function mulberry32(seed) {
   let a = seed | 0;
   return () => {
@@ -291,13 +291,13 @@ function pick(list, index) {
   return list[(index % list.length + list.length) % list.length];
 }
 
-// ../../src/engine/helpers.ts
+// src/engine/helpers.ts
 function cap(text) {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// ../../src/engine/topics.ts
+// src/engine/topics.ts
 function build(names) {
   return names.map((name, i) => ({ id: i + 1, name }));
 }
@@ -518,7 +518,7 @@ function topicId(level, name) {
 }
 var TOPICS = TOPICS_BY_LEVEL[2];
 
-// ../../src/engine/categories.ts
+// src/engine/categories.ts
 function T(level, a, b, c) {
   return [topicId(level, a), topicId(level, b), topicId(level, c)];
 }
@@ -1061,7 +1061,7 @@ function topicsForGoal(goal, index = 0, level = 2) {
   };
 }
 
-// ../../src/engine/chatTurns.ts
+// src/engine/uniqueTurns.ts
 var SUBJECTS = [
   "math",
   "English",
@@ -1072,7 +1072,9 @@ var SUBJECTS = [
   "PE",
   "reading",
   "writing",
-  "geography"
+  "geography",
+  "drama",
+  "coding"
 ];
 var HOBBIES = [
   "football",
@@ -1084,7 +1086,9 @@ var HOBBIES = [
   "cooking",
   "gaming",
   "cycling",
-  "painting"
+  "painting",
+  "chess",
+  "basketball"
 ];
 var JOBS = [
   "teacher",
@@ -1096,7 +1100,9 @@ var JOBS = [
   "driver",
   "designer",
   "scientist",
-  "writer"
+  "writer",
+  "pilot",
+  "farmer"
 ];
 var CITIES = [
   "Tokyo",
@@ -1110,7 +1116,9 @@ var CITIES = [
   "Cairo",
   "Madrid",
   "Beijing",
-  "Sydney"
+  "Sydney",
+  "Singapore",
+  "Dubai"
 ];
 var FEELINGS = [
   "happy",
@@ -1122,86 +1130,47 @@ var FEELINGS = [
   "bored",
   "hungry",
   "sleepy",
-  "fine"
+  "fine",
+  "proud",
+  "curious"
 ];
-function makeCtx(level, id) {
-  const sizes = [
-    NAMES.length,
-    NAMES.length,
-    COLORS.length,
-    ANIMALS.length,
-    FOODS.length,
-    TOYS.length,
-    L2_PLACES.length,
-    L2_ACTIONS.length,
-    DAYS.length,
-    WEATHER.length,
-    SCHOOL_ITEMS.length,
-    FAMILY.length,
-    L2_OBJECTS.length,
-    NUMBER_WORDS.length,
-    SUBJECTS.length,
-    HOBBIES.length,
-    JOBS.length,
-    CITIES.length,
-    FEELINGS.length,
-    20
-  ];
-  const [
-    ni,
-    n2,
-    ci,
-    ai,
-    fi,
-    ti,
-    pi,
-    vi,
-    di,
-    wi,
-    si,
-    fami,
-    oi,
-    numi,
-    subi,
-    hobi,
-    jobi,
-    cityi,
-    feeli,
-    agei
-  ] = decodeIndex(level * 1000003 + id * 97, sizes);
-  return {
-    name: NAMES[ni],
-    name2: NAMES[(n2 + 1) % NAMES.length],
-    color: COLORS[ci],
-    animal: ANIMALS[ai],
-    food: FOODS[fi],
-    toy: TOYS[ti],
-    place: pick([...L1_PLACES, ...L2_PLACES], pi),
-    action: pick([...L1_ACTIONS, ...L2_ACTIONS], vi),
-    day: DAYS[di],
-    weather: WEATHER[wi],
-    school: SCHOOL_ITEMS[si],
-    family: FAMILY[fami],
-    object: L2_OBJECTS[oi],
-    number: NUMBER_WORDS[numi],
-    age: (() => {
-      const ranges = {
-        1: [3, 5],
-        2: [6, 8],
-        3: [9, 10],
-        4: [11, 12],
-        5: [13, 15],
-        6: [16, 25]
-      };
-      const [min, max] = ranges[level];
-      return min + agei % (max - min + 1);
-    })(),
-    subject: SUBJECTS[subi],
-    hobby: HOBBIES[hobi],
-    job: JOBS[jobi],
-    city: CITIES[cityi],
-    feeling: FEELINGS[feeli]
-  };
+var TIMES = [
+  "this morning",
+  "after school",
+  "at lunch",
+  "in the evening",
+  "on Sunday",
+  "yesterday",
+  "last night",
+  "this weekend",
+  "before class",
+  "during break"
+];
+var REASONS = [
+  "it is fun",
+  "it helps me learn",
+  "I feel happy",
+  "my friends like it",
+  "it is useful",
+  "I am good at it",
+  "it is relaxing",
+  "it is exciting"
+];
+var ADVICE = [
+  "review a little every day",
+  "ask the teacher for help",
+  "sleep well tonight",
+  "make a simple plan",
+  "practice with a friend",
+  "take short breaks",
+  "start with easy parts",
+  "write key notes"
+];
+function capacityOf(p) {
+  return p.banks.reduce((n, b) => n * Math.max(1, b.length), 1);
+}
+function slotsFor(p, localIndex) {
+  return decodeIndex(localIndex, p.banks.map((b) => b.length)).map((i, bi) => p.banks[bi][i]);
 }
 function five(replies, seed) {
   const rand = mulberry32(seed);
@@ -1214,9 +1183,283 @@ function five(replies, seed) {
     unique.push(reply.trim());
     if (unique.length === 5) break;
   }
-  while (unique.length < 5) unique.push(`Okay.`);
+  while (unique.length < 5) unique.push("Okay.");
   return [unique[0], unique[1], unique[2], unique[3], unique[4]];
 }
+function patternsFor(level) {
+  const N = [...NAMES];
+  const F = [...FOODS];
+  const C = [...COLORS];
+  const A = [...ANIMALS];
+  const T2 = [...TOYS];
+  const Num = [...NUMBER_WORDS];
+  const Fam = [...FAMILY];
+  const P1 = [...L1_PLACES];
+  const P2 = [...L2_PLACES];
+  const Act1 = [...L1_ACTIONS];
+  const Act2 = [...L2_ACTIONS];
+  const Day = [...DAYS];
+  const W = [...WEATHER];
+  const Sch = [...SCHOOL_ITEMS];
+  const Obj = [...L2_OBJECTS];
+  const Sub = [...SUBJECTS];
+  const Hob = [...HOBBIES];
+  const Job = [...JOBS];
+  const City = [...CITIES];
+  const Feel = [...FEELINGS];
+  const Time = [...TIMES];
+  const Why = [...REASONS];
+  const Tip = [...ADVICE];
+  const L13 = [
+    { goal: "Colors", banks: [C, T2, N, P1], bot: ([c, t, n, p]) => `${n}, point to something ${c} like the ${t} at the ${p}.`, replies: ([c, t]) => [`This ${t} is ${c}.`, `Here is ${c}.`, `${cap(c)}.`, `I found ${c}.`, `The ${t}!`] },
+    { goal: "Animals", banks: [A, P1, N, C], bot: ([a, p, n, c]) => `${n}, find the ${c} ${a} at the ${p}.`, replies: ([a, p, , c]) => [`I see a ${c} ${a}.`, `At the ${p}!`, `A ${a}.`, `Here!`, `Looking...`] },
+    { goal: "Food", banks: [F, N, Time, P1], bot: ([f, n, t, p]) => `${n}, please choose a snack: do you want ${f} ${t} at the ${p}?`, replies: ([f]) => [`Yes, ${f}.`, `No, thanks.`, `Just a little.`, `Yummy!`, `Later.`] },
+    { goal: "Numbers", banks: [Num, T2, N, A], bot: ([num, t, n, a]) => `${n}, count the ${t}s, then count the ${a}s. How many ${t}s? ${cap(num)}?`, replies: ([num, t]) => [`${cap(num)}.`, `${cap(num)} ${t}s.`, `Yes.`, `Let me count.`, `I see ${num}.`] },
+    { goal: "Family", banks: [Fam, N, P1, F], bot: ([fam, n, p, f]) => `${n}, show me your ${fam} who likes ${f} at the ${p}.`, replies: ([fam, , p, f]) => [`My ${fam}.`, `This is my ${fam}.`, `At the ${p}.`, `${cap(f)} for my ${fam}.`, `Here!`] },
+    { goal: "Places", banks: [P1, N, Time, Act1], bot: ([p, n, t, act]) => `${n}, should we go to the ${p} ${t} to ${act}?`, replies: ([p, , t, act]) => [`Yes, to the ${p}.`, `Let's ${act}.`, `Okay ${t}.`, `Maybe.`, `Home first.`] },
+    { goal: "Actions", banks: [Act1, N, P1, T2], bot: ([act, n, p, t]) => `${n}, can you ${act} with the ${t} at the ${p}?`, replies: ([act, , p, t]) => [`Yes, I can ${act}.`, `With the ${t}!`, `At the ${p}.`, `Watch me!`, `A little.`] },
+    { goal: "Toys and play", banks: [T2, N, P1, Act1], bot: ([t, n, p, act]) => `${n}, pick a toy for the ${p}: the ${t} so we can ${act}.`, replies: ([t, , , act]) => [`The ${t}.`, `Let's ${act}.`, `Yes!`, `That one.`, `Okay.`] },
+    { goal: "Speaking and introductions", banks: [N, N, Feel, P1], bot: ([n, n2, feel, p]) => `At the ${p}, please ask ${n} if ${n2} feels ${feel}.`, replies: ([n, n2, feel]) => [`${n} feels ${feel}.`, `${n2} is okay.`, `I feel ${feel}.`, `Hi!`, `Nice to meet you.`] },
+    { goal: "Speaking and introductions", banks: [N, Feel, Time, Fam], bot: ([n, feel, t, fam]) => `${n}, tell your ${fam} how you feel ${t}. Are you ${feel}?`, replies: ([, feel, t, fam]) => [`I feel ${feel}.`, `I told my ${fam}.`, `${cap(t)} I am fine.`, `Yes.`, `A little.`] },
+    { goal: "Polite talk", banks: [F, N, P1, Time], bot: ([f, n, p, t]) => `${n}, at the ${p} ${t}, ask politely for ${f}.`, replies: ([f]) => [`May I have ${f}?`, `Please.`, `Thank you.`, `Here you are.`, `Yes, please.`] },
+    { goal: "Animals", banks: [A, A, N, P1], bot: ([a1, a2, n, p]) => `${n}, at the ${p}, is the animal a ${a1} or a ${a2}?`, replies: ([a1, a2]) => [`A ${a1}.`, `A ${a2}.`, `I think ${a1}.`, `Not sure.`, `Look again.`] },
+    { goal: "Colors", banks: [C, C, T2, N], bot: ([c1, c2, t, n]) => `${n}, is the ${t} ${c1}, or is it ${c2}?`, replies: ([c1, c2, t]) => [`${cap(c1)}.`, `${cap(c2)}.`, `The ${t} is ${c1}.`, `Maybe ${c2}.`, `Both?`] },
+    { goal: "Food", banks: [F, F, N, Time], bot: ([f1, f2, n, t]) => `${n}, for ${t}, pick only one: ${f1} or ${f2}?`, replies: ([f1, f2]) => [`${cap(f1)}.`, `${cap(f2)}.`, `Both!`, `Water.`, `Not hungry.`] },
+    { goal: "Numbers", banks: [Num, A, N, P1], bot: ([num, a, n, p]) => `${n}, at the ${p}, can you find ${num} ${a}s?`, replies: ([num, a]) => [`Yes!`, `I found ${num}.`, `${cap(num)} ${a}s.`, `Counting...`, `Help me.`] },
+    { goal: "Places", banks: [P1, P1, N, Fam], bot: ([p1, p2, n, fam]) => `${n}, your ${fam} asks: are we going to the ${p1} or the ${p2}?`, replies: ([p1, p2, , fam]) => [`The ${p1}.`, `The ${p2}.`, `Ask my ${fam}.`, `Home.`, `Either.`] },
+    { goal: "Actions", banks: [Act1, Act1, N, T2], bot: ([a1, a2, n, t]) => `${n}, with the ${t}, should we ${a1} first or ${a2} first?`, replies: ([a1, a2]) => [`${cap(a1)} first.`, `${cap(a2)} first.`, `Both!`, `You choose.`, `Okay.`] },
+    { goal: "Toys and play", banks: [T2, Act1, N, Time], bot: ([t, act, n, time]) => `${n}, ${time}, put away the ${t} after you ${act}. Understood?`, replies: ([t, act]) => [`Understood.`, `I will ${act}.`, `Okay.`, `The ${t} goes away.`, `Yes.`] },
+    { goal: "Polite talk", banks: [N, T2, P1, Fam], bot: ([n, t, p, fam]) => `${n}, may your ${fam} borrow the ${t} at the ${p}?`, replies: ([, t, , fam]) => [`Yes.`, `Please be careful.`, `Ask my ${fam}.`, `Sure.`, `Here is the ${t}.`] },
+    { goal: "Family", banks: [Fam, Fam, N, P1], bot: ([f1, f2, n, p]) => `${n}, at the ${p}, who helps more, your ${f1} or your ${f2}?`, replies: ([f1, f2]) => [`My ${f1}.`, `My ${f2}.`, `Both.`, `I help too.`, `Not sure.`] },
+    { goal: "Daily talk", banks: [Day, N, Feel, P1], bot: ([d, n, feel, p]) => `${n}, today is ${d}. At the ${p}, do you feel ${feel}?`, replies: ([d, , feel]) => [`Yes.`, `I feel ${feel}.`, `Today is ${d}.`, `A little.`, `I'm okay.`] },
+    { goal: "Weather", banks: [W, P1, N, T2], bot: ([w, p, n, t]) => `${n}, take the ${t} only if it is ${w} at the ${p}. Is it ${w}?`, replies: ([w, p]) => [`Yes, ${w}.`, `No.`, `At the ${p}, maybe.`, `Let's check.`, `A little ${w}.`] },
+    { goal: "Food", banks: [F, Time, N, Fam], bot: ([f, t, n, fam]) => `${n}, your ${fam} prepared ${f} ${t}. Will you try it?`, replies: ([f, , , fam]) => [`Yes.`, `Thank you.`, `I love ${f}.`, `My ${fam} cooks well.`, `Later.`] },
+    { goal: "Speaking and introductions", banks: [N, P1, Time, Act1], bot: ([n, p, t, act]) => `Say goodbye to ${n} at the ${p} ${t} before you ${act}.`, replies: ([n, , , act]) => [`Bye, ${n}!`, `See you!`, `Goodbye!`, `Okay, I will ${act}.`, `Bye-bye!`] }
+  ];
+  const L23 = [
+    { goal: "School vocabulary", banks: [Sub, N, Sch, Time], bot: ([sub, n, item, t]) => `${n}, for ${sub} ${t}, which item do you need: a ${item}?`, replies: ([sub, , item]) => [`A ${item}.`, `Yes for ${sub}.`, `I have it.`, `Book too.`, `No.`] },
+    { goal: "School vocabulary", banks: [Sub, Feel, N, Day], bot: ([sub, feel, n, d]) => `${n}, on ${d}, did ${sub} make you feel ${feel}?`, replies: ([sub, feel]) => [`Yes.`, `I felt ${feel}.`, `${cap(sub)} was okay.`, `A little.`, `No.`] },
+    { goal: "Daily talk", banks: [Day, W, N, P2], bot: ([d, w, n, p]) => `${n}, if today is ${d} and it is ${w}, can we still go to the ${p}?`, replies: ([d, w, , p]) => [`Yes.`, `Maybe not if ${w}.`, `Let's go to the ${p}.`, `Stay home.`, `${d} is fine.`] },
+    { goal: "Weather", banks: [W, P2, N, Act2], bot: ([w, p, n, act]) => `${n}, because it is ${w}, should we ${act} at the ${p} or stay inside?`, replies: ([w, p, , act]) => [`Stay inside.`, `Still ${act} at the ${p}.`, `Wait.`, `Take a coat.`, `Okay.`] },
+    { goal: "Food and likes", banks: [F, Time, N, P2], bot: ([f, t, n, p]) => `${n}, at the ${p} ${t}, order food: will you choose ${f}?`, replies: ([f]) => [`Yes, ${f}.`, `Something else.`, `Water.`, `I'm not hungry.`, `Share.`] },
+    { goal: "Family", banks: [Fam, N, P2, Time], bot: ([fam, n, p, t]) => `${n}, who takes you to the ${p} ${t}, your ${fam}?`, replies: ([fam, , p]) => [`My ${fam}.`, `Sometimes.`, `I go alone.`, `To the ${p}, yes.`, `Dad.`] },
+    { goal: "Hobbies", banks: [Hob, N, Time, P2], bot: ([h, n, t, p]) => `${n}, after ${t}, where do you practice ${h}: at the ${p}?`, replies: ([h, , , p]) => [`At the ${p}.`, `At home.`, `I love ${h}.`, `Not today.`, `Yes.`] },
+    { goal: "Places", banks: [P2, Act2, N, Time], bot: ([p, act, n, t]) => `${n}, ${t} we can only do one thing: ${act} at the ${p}. Deal?`, replies: ([p, act]) => [`Deal.`, `Let's ${act}.`, `At the ${p}.`, `Maybe later.`, `Okay.`] },
+    { goal: "Polite talk", banks: [N, Sch, P2, Time], bot: ([n, item, p, t]) => `${n}, ${t} at the ${p}, politely ask to borrow a ${item}.`, replies: ([, item]) => [`May I borrow a ${item}?`, `Please.`, `Thank you.`, `Here.`, `Sure.`] },
+    { goal: "Speaking and introductions", banks: [N, City, Hob, Feel], bot: ([n, city, h, feel]) => `Interview ${n}: hometown, hobby, feeling \u2014 ${city}, ${h}, ${feel}?`, replies: ([n, city, h, feel]) => [`I'm from ${city}.`, `I like ${h}.`, `I feel ${feel}.`, `My name is ${n}.`, `Yes.`] },
+    { goal: "Speaking and introductions", banks: [N, Feel, Time, Sub], bot: ([n, feel, t, sub]) => `${n}, before ${sub} ${t}, check in: how do you feel? ${cap(feel)}?`, replies: ([, feel, , sub]) => [`I feel ${feel}.`, `Ready for ${sub}.`, `Okay.`, `A bit nervous.`, `Great.`] },
+    { goal: "Daily talk", banks: [Obj, N, Time, P2], bot: ([obj, n, t, p]) => `${n}, before leaving for the ${p} ${t}, did you pack your ${obj}?`, replies: ([obj]) => [`Yes.`, `Not yet.`, `It is packed.`, `In my bag.`, `I forgot.`] },
+    { goal: "Hobbies", banks: [Hob, Hob, N, Day], bot: ([h1, h2, n, d]) => `${n}, on ${d} you may pick only one club: ${h1} or ${h2}?`, replies: ([h1, h2]) => [`${cap(h1)}.`, `${cap(h2)}.`, `Hard to choose.`, `Both someday.`, `Neither.`] },
+    { goal: "Food and likes", banks: [F, F, N, Day], bot: ([f1, f2, n, d]) => `${n}, lunch menu on ${d}: ${f1} versus ${f2}. Vote!`, replies: ([f1, f2]) => [`${cap(f1)}.`, `${cap(f2)}.`, `Skip lunch.`, `Both tiny bits.`, `Fruit.`] },
+    { goal: "Places", banks: [P2, P2, N, Fam], bot: ([pa, pb, n, fam]) => `${n}, your ${fam} can drive to one place: the ${pa} or the ${pb}?`, replies: ([pa, pb]) => [`The ${pa}.`, `The ${pb}.`, `Home.`, `Ask again.`, `Either.`] },
+    { goal: "Weather", banks: [W, Day, N, Sch], bot: ([w, d, n, item]) => `${n}, on ${d} if it is ${w}, bring your ${item}. Will you?`, replies: ([w, , , item]) => [`Yes.`, `I'll bring the ${item}.`, `If it is ${w}.`, `Maybe.`, `No need.`] },
+    { goal: "Family", banks: [Fam, Act2, N, Time], bot: ([fam, act, n, t]) => `${n}, ${t} help your ${fam} ${act}. What do you say first?`, replies: ([fam, act]) => [`I can help.`, `Let me ${act}.`, `Okay, ${fam}.`, `Sure.`, `In a minute.`] },
+    { goal: "Polite talk", banks: [N, F, Time, P2], bot: ([n, f, t, p]) => `At the ${p} ${t}, ${n} spills ${f}. What polite words fit?`, replies: ([, f]) => [`I'm sorry.`, `Excuse me.`, `Let me clean the ${f}.`, `Pardon me.`, `Thank you for helping.`] },
+    { goal: "School vocabulary", banks: [Sub, Sch, N, P2], bot: ([sub, item, n, p]) => `${n}, return the ${item} to the ${p} after ${sub}. Confirm?`, replies: ([sub, item, , p]) => [`Confirmed.`, `After ${sub}.`, `To the ${p}.`, `I will return the ${item}.`, `Okay.`] },
+    { goal: "Daily talk", banks: [Time, Act2, N, Feel], bot: ([t, act, n, feel]) => `${n}, plan ${t}: ${act}, then share if you feel ${feel}.`, replies: ([t, act, , feel]) => [`I will ${act} ${t}.`, `I feel ${feel}.`, `Okay.`, `Done.`, `Not yet.`] },
+    { goal: "Speaking and introductions", banks: [N, City, Time, Day], bot: ([n, city, t, d]) => `On ${d} ${t}, introduce ${n} from ${city} to the class.`, replies: ([n, city]) => [`This is ${n}.`, `From ${city}.`, `Welcome!`, `Nice to meet you.`, `Hello.`] },
+    { goal: "Hobbies", banks: [Hob, P2, N, Feel], bot: ([h, p, n, feel]) => `${n}, after ${h} at the ${p}, describe your feeling in one word: ${feel}?`, replies: ([h, , , feel]) => [`${cap(feel)}.`, `Tired.`, `Happy.`, `${cap(h)} was fun.`, `Okay.`] },
+    { goal: "Food and likes", banks: [F, Time, Fam, N], bot: ([f, t, fam, n]) => `${n}, thank your ${fam} for cooking ${f} ${t}.`, replies: ([f, , fam]) => [`Thank you!`, `Thanks for the ${f}.`, `Thanks, ${fam}.`, `It was yummy.`, `Thanks a lot.`] },
+    { goal: "Places", banks: [P2, Obj, N, Time], bot: ([p, obj, n, t]) => `${n}, ${t} leave the ${obj} at the ${p} office. Repeat the instruction.`, replies: ([p, obj, , t]) => [`Leave the ${obj} at the ${p}.`, `${cap(t)} at the office.`, `Okay.`, `I understand.`, `Got it.`] }
+  ];
+  const L33 = [
+    { goal: "Past experiences", banks: [P2, Time, N, Hob], bot: ([p, t, n, h]) => `${n}, summarize yesterday: ${t} at the ${p}, then ${h}? True or false?`, replies: ([p, t, , h]) => [`True.`, `False.`, `I went to the ${p}.`, `I did ${h}.`, `I stayed home.`] },
+    { goal: "School life", banks: [Sub, Feel, N, Day], bot: ([sub, feel, n, d]) => `${n}, rank ${d}'s classes: was ${sub} the one that felt ${feel}?`, replies: ([sub, feel]) => [`Yes.`, `${cap(sub)} felt ${feel}.`, `No.`, `Art was better.`, `PE.`] },
+    { goal: "Reasons and because", banks: [Hob, Why, N, Time], bot: ([h, r, n, t]) => `${n}, give a reason for liking ${h} ${t} \u2014 is "${r}" enough?`, replies: ([h, r]) => [`Because ${r}.`, `Yes.`, `Also because it is fun.`, `I like ${h}.`, `Not only that.`] },
+    { goal: "Comparisons", banks: [A, A, N, P2], bot: ([a1, a2, n, p]) => `${n}, at the ${p} exhibit, compare size: ${a1} vs ${a2}.`, replies: ([a1, a2]) => [`${cap(a1)} is bigger.`, `${cap(a2)} is smaller.`, `Similar.`, `I need a photo.`, `Not sure.`] },
+    { goal: "Feelings", banks: [Feel, Time, N, Sub], bot: ([feel, t, n, sub]) => `${n}, after ${sub} ${t}, name your feeling without copying classmates: ${feel}?`, replies: ([feel, , , sub]) => [`I feel ${feel}.`, `${cap(sub)} was fine.`, `Tired.`, `Okay.`, `Proud.`] },
+    { goal: "Weekend plans", banks: [P2, Hob, N, Day], bot: ([p, h, n, d]) => `${n}, draft a ${d} plan with only one activity: ${h} at the ${p}.`, replies: ([p, h, , d]) => [`${cap(h)} at the ${p}.`, `On ${d}.`, `Stay home.`, `Maybe.`, `Invite a friend.`] },
+    { goal: "Food and preferences", banks: [F, P2, N, Time], bot: ([f, p, n, t]) => `${n}, refuse politely if you don't want ${f} at the ${p} ${t}.`, replies: ([f]) => [`No, thank you.`, `Maybe later.`, `I'm full.`, `I don't like ${f}.`, `Water, please.`] },
+    { goal: "Directions", banks: [P2, P2, N, Time], bot: ([pa, pb, n, t]) => `${n}, ${t} give directions from the ${pa} to the ${pb} in two steps.`, replies: ([pa, pb]) => [`Go straight from the ${pa}.`, `Turn left to the ${pb}.`, `Ask a guard.`, `I can show you.`, `Use the map.`] },
+    { goal: "Stories", banks: [N, Obj, P2, Time], bot: ([n, obj, p, t]) => `Story prompt: ${n} lost a ${obj} at the ${p} ${t}. Ask one useful question.`, replies: ([, obj, p]) => [`Where did you last see the ${obj}?`, `Was it at the ${p}?`, `Can I help look?`, `Tell the teacher.`, `Don't worry.`] },
+    { goal: "Opinions", banks: [Obj, Feel, N, Why], bot: ([obj, feel, n, r]) => `${n}, review this ${obj}: feeling ${feel}, reason "${r}". Agree?`, replies: ([obj, feel, , r]) => [`Agree.`, `Disagree.`, `Because ${r}.`, `The ${obj} is fine.`, `I feel ${feel}.`] },
+    { goal: "Daily routines", banks: [Time, Act2, N, P2], bot: ([t, act, n, p]) => `${n}, fix your routine: ${act} at the ${p} only ${t}. Say it back.`, replies: ([t, act, , p]) => [`I ${act} at the ${p} ${t}.`, `Okay.`, `Got it.`, `Every day.`, `On weekdays.`] },
+    { goal: "Speaking and introductions", banks: [N, City, Hob, Sub], bot: ([n, city, h, sub]) => `Build a 3-part intro for ${n}: city ${city}, hobby ${h}, subject ${sub}.`, replies: ([n, city, h, sub]) => [`I'm ${n} from ${city}.`, `I like ${h}.`, `My subject is ${sub}.`, `Nice to meet you.`, `Hello.`] },
+    { goal: "Past experiences", banks: [Sub, Time, N, Feel], bot: ([sub, t, n, feel]) => `${n}, did finishing ${sub} ${t} make you feel ${feel}? Answer with evidence.`, replies: ([sub, t, , feel]) => [`Yes, I felt ${feel}.`, `I finished ${sub} ${t}.`, `No.`, `A little.`, `Proud.`] },
+    { goal: "School life", banks: [Sub, Day, N, Tip], bot: ([sub, d, n, tip]) => `${n}, for ${sub} on ${d}, choose one improvement tip: ${tip}.`, replies: ([sub, , , tip]) => [`I will ${tip}.`, `Okay for ${sub}.`, `Maybe.`, `I already do that.`, `Thanks.`] },
+    { goal: "Comparisons", banks: [P2, P2, N, Day], bot: ([pa, pb, n, d]) => `${n}, on ${d} which trip is shorter, to the ${pa} or the ${pb}?`, replies: ([pa, pb]) => [`The ${pa}.`, `The ${pb}.`, `Same time.`, `Depends on traffic.`, `I need a map.`] },
+    { goal: "Weekend plans", banks: [Hob, Day, N, Feel], bot: ([h, d, n, feel]) => `${n}, invite a friend to ${h} on ${d} and say you feel ${feel} about it.`, replies: ([h, d, , feel]) => [`Let's do ${h} on ${d}.`, `I feel ${feel}.`, `Are you free?`, `Maybe next week.`, `Yes!`] },
+    { goal: "Directions", banks: [P2, Act2, N, Obj], bot: ([p, act, n, obj]) => `${n}, while you ${act} to the ${p}, keep the ${obj} visible. Why?`, replies: ([p, , , obj]) => [`So I don't lose the ${obj}.`, `Safety.`, `Okay.`, `I'll hold it.`, `To the ${p}, got it.`] },
+    { goal: "Feelings", banks: [Feel, Sub, N, Time], bot: ([feel, sub, n, t]) => `${n}, replace "I'm fine" with a precise feeling about ${sub} ${t}: ${feel}.`, replies: ([feel, sub]) => [`I feel ${feel} about ${sub}.`, `${cap(feel)}.`, `Still learning.`, `Okay.`, `Thanks.`] },
+    { goal: "Opinions", banks: [Hob, Why, N, Day], bot: ([h, r, n, d]) => `${n}, on ${d} debate: is ${h} worth time because ${r}? Take a side.`, replies: ([h, r]) => [`Yes, because ${r}.`, `No.`, `Sometimes.`, `${cap(h)} helps me.`, `I need balance.`] },
+    { goal: "Food and preferences", banks: [F, Time, P2, N], bot: ([f, t, p, n]) => `${n}, plan shopping at the ${p} ${t}: put ${f} on the list only if needed.`, replies: ([f, t, p]) => [`Add ${f}.`, `Skip ${f}.`, `At the ${p} ${t}.`, `We have some.`, `Okay.`] },
+    { goal: "Daily routines", banks: [Time, Time, N, Act2], bot: ([t1, t2, n, act]) => `${n}, choose wake-up window for ${act}: ${t1} or ${t2}?`, replies: ([t1, t2, , act]) => [`${cap(t1)}.`, `${cap(t2)}.`, `I ${act} early.`, `Weekends differ.`, `Alarm set.`] },
+    { goal: "Stories", banks: [N, P2, Time, Feel], bot: ([n, p, t, feel]) => `Continue: ${n} arrived at the ${p} ${t} feeling ${feel}. What happens next?`, replies: ([n, p, , feel]) => [`${n} meets a friend.`, `${n} looks around the ${p}.`, `Then goes home.`, `Still feels ${feel}.`, `Asks for help.`] },
+    { goal: "Reasons and because", banks: [Sub, Why, N, Day], bot: ([sub, r, n, d]) => `${n}, explain why ${sub} matters on ${d} using: because ${r}.`, replies: ([sub, r]) => [`Because ${r}.`, `${cap(sub)} is useful.`, `For tests.`, `For fun.`, `I'm unsure.`] },
+    { goal: "Past experiences", banks: [Obj, P2, N, Time], bot: ([obj, p, n, t]) => `${n}, report where you left the ${obj} ${t} \u2014 was it the ${p}?`, replies: ([obj, p, , t]) => [`At the ${p}.`, `I left the ${obj} ${t}.`, `Not sure.`, `In my bag.`, `At home.`] }
+  ];
+  const L4extra = [
+    { goal: "Conversations", banks: [Time, P2, N, Act2], bot: ([t, p, n, act]) => `${n}, change the topic: instead of small talk, propose ${act} at the ${p} ${t}.`, replies: ([t, p, , act]) => [`Let's ${act} at the ${p} ${t}.`, `Good idea.`, `Maybe.`, `I'm busy.`, `Okay.`] },
+    { goal: "First conditional", banks: [W, P2, N, Hob], bot: ([w, p, n, h]) => `${n}, complete: If it is ${w}, I won't go to the ${p} for ${h}. What's your version?`, replies: ([w, p, , h]) => [`If it is ${w}, I'll stay home.`, `I'll still go to the ${p}.`, `I'll do ${h} indoors.`, `Take a coat.`, `Call a friend.`] },
+    { goal: "Advice", banks: [Sub, Tip, N, Feel], bot: ([sub, tip, n, feel]) => `${n}, you feel ${feel} about ${sub}. Offer advice using: ${tip}.`, replies: ([sub, tip, , feel]) => [`You should ${tip}.`, `I feel ${feel} too.`, `Review ${sub}.`, `Ask the teacher.`, `Breathe.`] },
+    { goal: "Phrasal verbs", banks: [Obj, N, P2, Time], bot: ([obj, n, p, t]) => `${n}, use "look after": ask someone to look after your ${obj} at the ${p} ${t}.`, replies: ([obj, , p]) => [`Can you look after my ${obj}?`, `At the ${p}, please.`, `Sure.`, `No problem.`, `Okay.`] },
+    { goal: "School projects", banks: [Sub, Feel, N, Day], bot: ([sub, feel, n, d]) => `${n}, status update for the ${sub} project on ${d}: feeling ${feel}. Keep it under 8 words.`, replies: ([sub, feel]) => [`${cap(sub)} project: on track.`, `I feel ${feel}.`, `Need more ideas.`, `Part one done.`, `Presenting soon.`] },
+    { goal: "Making suggestions", banks: [P2, Hob, N, Time], bot: ([p, h, n, t]) => `${n}, suggest two options ${t}: ${h} OR a walk to the ${p}.`, replies: ([p, h]) => [`How about ${h}?`, `Why don't we go to the ${p}?`, `Either works.`, `Study instead.`, `Snacks first.`] },
+    { goal: "Describing people", banks: [N, Hob, Feel, Sub], bot: ([n, h, feel, sub]) => `Describe ${n} without looks: hobby ${h}, mood ${feel}, subject ${sub}.`, replies: ([n, h, feel, sub]) => [`${n} loves ${h}.`, `${n} seems ${feel}.`, `Good at ${sub}.`, `Friendly.`, `Hard-working.`] },
+    { goal: "Travel talk", banks: [City, Feel, N, Time], bot: ([city, feel, n, t]) => `${n}, answer in past tense: when you visited ${city} ${t}, you felt ${feel}. Add one detail.`, replies: ([city, feel, , t]) => [`I visited ${city} ${t}.`, `I felt ${feel}.`, `It was crowded.`, `Food was great.`, `I want to return.`] },
+    { goal: "Problem solving", banks: [P2, Tip, N, Time], bot: ([p, tip, n, t]) => `${n}, bus to the ${p} is late ${t}. Choose a fix: ${tip}.`, replies: ([p, tip]) => [`We should ${tip}.`, `Walk to the ${p}.`, `Wait.`, `Call home.`, `Next bus.`] },
+    { goal: "Opinions and reasons", banks: [Sub, Why, N, Day], bot: ([sub, r, n, d]) => `${n}, on ${d} write a mini opinion: ${sub} matters because ${r}.`, replies: ([sub, r]) => [`${cap(sub)} matters because ${r}.`, `I agree.`, `Not always.`, `Useful daily.`, `For exams.`] }
+  ];
+  const L53 = [
+    { goal: "Teen conversation", banks: [Hob, Feel, N, Time, P2], bot: ([h, feel, n, t, p]) => `${n}, avoid one-word answers: explain your weekend using ${h} at the ${p} and feeling ${feel} ${t}.`, replies: ([h, feel, , t, p]) => [`I did ${h} at the ${p} and felt ${feel}.`, `Busy ${t}.`, `Mostly homework.`, `Hung out.`, `Slept more.`] },
+    { goal: "Idioms in chat", banks: [Sub, Feel, N, Time, P2], bot: ([sub, feel, n, t, p]) => `${n}, at the ${p}, reply to "piece of cake" about ${sub} ${t} without repeating the idiom. Feeling ${feel}?`, replies: ([sub, feel]) => [`It was easy.`, `${cap(sub)} was hard for me.`, `I feel ${feel}.`, `Took longer.`, `Need review.`] },
+    { goal: "School stress", banks: [Sub, Tip, N, Day, P2], bot: ([sub, tip, n, d, p]) => `${n}, exam plan for ${sub} on ${d} at the ${p}: keep only one action \u2014 ${tip}.`, replies: ([sub, tip]) => [`I will ${tip}.`, `Focus on ${sub}.`, `Still stressed.`, `Timetable done.`, `Past papers.`] },
+    { goal: "Hobbies and identity", banks: [Hob, Why, N, P2, Feel], bot: ([h, r, n, p, feel]) => `${n}, at the ${p}, explain identity through ${h} using reason: ${r}. Do you feel ${feel}?`, replies: ([h, r, , , feel]) => [`I enjoy ${h} because ${r}.`, `It relaxes me.`, `I meet people.`, `I feel ${feel}.`, `Years of practice.`] },
+    { goal: "Agreeing and disagreeing", banks: [Sub, Why, N, Time, P2], bot: ([sub, r, n, t, p]) => `${n}, ${t} at the ${p}, respond to "homework is useless" about ${sub}. Use because ${r}.`, replies: ([sub, r]) => [`I disagree because ${r}.`, `I partly agree.`, `Depends.`, `${cap(sub)} still helps.`, `Quality matters.`] },
+    { goal: "Future goals", banks: [Job, City, N, Sub, Feel], bot: ([job, city, n, sub, feel]) => `${n}, connect school to future: ${sub} \u2192 ${job} in ${city}. One sentence. Feeling ${feel}?`, replies: ([job, city, , sub, feel]) => [`I may become a ${job} in ${city}.`, `${cap(sub)} supports that path.`, `I feel ${feel}.`, `Still deciding.`, `Travel first.`] },
+    { goal: "Everyday English", banks: [P2, Time, N, Hob, F], bot: ([p, t, n, h, f]) => `${n}, rewrite a casual invite: hang out ${t} near the ${p} after ${h}, maybe get ${f}.`, replies: ([p, t, , h, f]) => [`Want to hang out ${t}?`, `After ${h} near the ${p}?`, `Some ${f} sounds good.`, `Not today.`, `Message me.`] },
+    { goal: "News and society", banks: [Sub, Why, N, Tip, Day], bot: ([sub, r, n, tip, d]) => `${n}, on ${d} policy take: less ${sub} homework because ${r}. Suggest school action: ${tip}.`, replies: ([sub, r, , tip]) => [`Yes, because ${r}.`, `Schools should ${tip}.`, `A little ${sub} is fine.`, `Projects > worksheets.`, `Depends.`] },
+    { goal: "Problem talk", banks: [Sub, Tip, N, Feel, P2], bot: ([sub, tip, n, feel, p]) => `${n}, at the ${p}, script a calm line to a teammate skipping ${sub} work. You feel ${feel}; tip: ${tip}.`, replies: ([sub, tip, , feel]) => [`Can we split the ${sub} tasks?`, `I feel ${feel}.`, `Please ${tip}.`, `Let's set a deadline.`, `I'll tell the teacher if needed.`] },
+    { goal: "Opinions", banks: [Obj, Feel, N, Why, P2], bot: ([obj, feel, n, r, p]) => `${n}, at the ${p}, give a nuanced review of the ${obj}: feel ${feel}, because ${r}.`, replies: ([obj, feel, , r]) => [`I feel ${feel} about the ${obj}.`, `Because ${r}.`, `Not my favorite.`, `Useful though.`, `I'd pick another.`] },
+    ...L4extra.map((p) => ({
+      ...p,
+      banks: [...p.banks, P2],
+      bot: (s) => `${p.bot(s.slice(0, -1))} (setting: ${s[s.length - 1]})`,
+      replies: (s) => p.replies(s.slice(0, -1))
+    }))
+  ];
+  const L63 = [
+    { goal: "Professional English", banks: [Job, City, N, Sub, Time], bot: ([job, city, n, sub, t]) => `${n}, 20-second intro ${t} linking ${sub} skills to a ${job} path in ${city}.`, replies: ([job, city, n, sub]) => [`I'm ${n}.`, `I study ${sub}.`, `Aiming for ${job} work in ${city}.`, `I improve workplace English.`, `Nice to meet you.`] },
+    { goal: "Meetings and collaboration", banks: [Obj, Tip, N, Time, P2], bot: ([obj, tip, n, t, p]) => `${n}, at the ${p}, deadline for ${obj} moved ${t}. Propose one concrete next step: ${tip}.`, replies: ([obj, tip, , t]) => [`We should ${tip}.`, `Reprioritize the ${obj}.`, `Share a new timeline ${t}.`, `Split tasks.`, `Quick huddle.`] },
+    { goal: "Academic discussion", banks: [Sub, Why, N, Tip, P2], bot: ([sub, r, n, tip, p]) => `${n}, at the ${p}, define reliability for a ${sub} source (because ${r}) and a check to ${tip}.`, replies: ([sub, r, , tip]) => [`Evidence matters in ${sub}.`, `Because ${r}.`, `We should ${tip}.`, `Watch for bias.`, `Prefer peer review.`] },
+    { goal: "Interview English", banks: [Job, Why, N, City, Sub], bot: ([job, r, n, city, sub]) => `${n}, answer "Why this ${job} role in ${city} after ${sub}?" using because ${r}.`, replies: ([job, r, , city, sub]) => [`Because ${r}.`, `It fits my ${job} goals.`, `${city} offers growth.`, `${cap(sub)} prepared me.`, `I want to learn.`] },
+    { goal: "Workplace chat", banks: [Obj, Tip, N, Time, P2], bot: ([obj, tip, n, t, p]) => `${n}, from the ${p}, draft a client update about ${obj} delay ${t}; include apology and next step (${tip}).`, replies: ([obj, tip, , t]) => [`Sorry for the delay.`, `We're reviewing the ${obj}.`, `We will ${tip}.`, `Update by end of day ${t}.`, `Thanks for your patience.`] },
+    { goal: "Register and tone", banks: [Sub, Tip, N, Job, Time], bot: ([sub, tip, n, job, t]) => `${n}, ${t} rewrite casually\u2192formally: ask a ${job} for more time on ${sub}, and ${tip}.`, replies: ([sub, tip, , job]) => [`Could I request an extension on ${sub}?`, `I can submit a draft soon.`, `Thank you, ${job}.`, `I should ${tip}.`, `Two extra days would help.`] },
+    { goal: "Debate and nuance", banks: [P2, Why, N, Sub, Feel], bot: ([p, r, n, sub, feel]) => `${n}, nuanced stance: studying ${sub} at the ${p} vs home, because ${r}. Feeling ${feel}?`, replies: ([p, r, , sub, feel]) => [`It depends.`, `${cap(sub)} needs focus at the ${p}.`, `I feel ${feel}.`, `Because ${r}.`, `Hybrid works.`] },
+    { goal: "Social English", banks: [P2, Time, N, Hob, F], bot: ([p, t, n, h, f]) => `${n}, close a meetup at the ${p} ${t} after ${h} with thanks + one takeaway (and ${f} if needed).`, replies: ([p, t, , h]) => [`Thanks, everyone.`, `Useful points today.`, `After ${h} at the ${p}.`, `Let's continue ${t}.`, `I'll revise the notes.`] },
+    { goal: "Collocations in context", banks: [Obj, Tip, N, Sub, P2], bot: ([obj, tip, n, sub, p]) => `${n}, at the ${p}, use "make a decision" about the ${obj} for ${sub}; suggest we ${tip}.`, replies: ([obj, tip, , sub]) => [`We need to make a decision on the ${obj}.`, `For ${sub}, yes.`, `We should ${tip}.`, `List pros and cons.`, `Need more data.`] },
+    { goal: "Problem solving", banks: [Sub, Tip, N, Obj, P2], bot: ([sub, tip, n, obj, p]) => `${n}, at the ${p}, ${sub} survey on the ${obj} is unclear. Pick a next method: ${tip}.`, replies: ([sub, tip, , obj]) => [`We should ${tip}.`, `Check ${sub} wording.`, `More data on the ${obj}.`, `Compare studies.`, `Rewrite questions.`] },
+    { goal: "Future goals", banks: [Job, City, N, Feel, Sub], bot: ([job, city, n, feel, sub]) => `${n}, decide aloud: relocate to ${city} for ${job} after ${sub}? Include feeling ${feel}.`, replies: ([job, city, , feel, sub]) => [`I'd consider ${city}.`, `For a ${job} role, maybe.`, `I feel ${feel}.`, `${cap(sub)} comes first.`, `Need details.`] },
+    { goal: "Everyday English", banks: [P2, Hob, N, Time, F], bot: ([p, h, n, t, f]) => `${n}, soft decline or accept: coffee and ${f} near the ${p} ${t} after ${h}.`, replies: ([p, h, , t, f]) => [`Sure, after ${h}.`, `Near the ${p} works.`, `Not ${t}.`, `${cap(f)} sounds good.`, `Let's text.`] },
+    { goal: "Meetings and collaboration", banks: [Obj, N, Day, Tip, City], bot: ([obj, n, d, tip, city]) => `${n}, ${city} team sync on ${d} about the ${obj}: one action is ${tip}. Confirm ownership.`, replies: ([obj, , , tip, city]) => [`I own the ${obj}.`, `I will ${tip}.`, `${city} team noted.`, `Confirmed.`, `Need a backup.`] },
+    { goal: "Interview English", banks: [Job, N, Feel, Why, Time], bot: ([job, n, feel, r, t]) => `${n}, ${t} follow-up question: why a ${job} path if you feel ${feel}? Because ${r}?`, replies: ([job, , feel, r]) => [`Because ${r}.`, `I still want the ${job} path.`, `I feel ${feel}, but motivated.`, `Growth matters.`, `I can learn fast.`] }
+  ];
+  const map = {
+    1: L13,
+    2: L23,
+    3: L33,
+    4: [...L33, ...L4extra],
+    5: L53,
+    6: L63
+  };
+  return map[level];
+}
+var CACHE = /* @__PURE__ */ new Map();
+function gcd(a, b) {
+  while (b) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  return a;
+}
+function findMix(total2) {
+  let mix = 999983;
+  while (gcd(mix, total2) !== 1) mix += 2;
+  return mix;
+}
+function prepare(level) {
+  const hit = CACHE.get(level);
+  if (hit) return hit;
+  const patterns = patternsFor(level);
+  const caps = patterns.map(capacityOf);
+  const starts = [];
+  let total2 = 0;
+  for (const c of caps) {
+    starts.push(total2);
+    total2 += c;
+  }
+  if (total2 < 1e6) {
+    throw new Error(`Level ${level} capacity ${total2} < 1e6 (patterns=${patterns.length})`);
+  }
+  const prepared = { patterns, caps, starts, total: total2, mix: findMix(total2) };
+  CACHE.set(level, prepared);
+  return prepared;
+}
+function generateUniqueChatTurn(level, id, bankSize = 1e6) {
+  const size = Math.max(1, Math.floor(bankSize));
+  const index = (id % size + size) % size;
+  const { patterns, starts, total: total2, mix } = prepare(level);
+  const local = Number(BigInt(index) * BigInt(mix) % BigInt(total2));
+  let lo = 0;
+  let hi = patterns.length - 1;
+  while (lo < hi) {
+    const mid = lo + hi + 1 >> 1;
+    if (starts[mid] <= local) lo = mid;
+    else hi = mid - 1;
+  }
+  const pattern = patterns[lo];
+  const slotIndex = local - starts[lo];
+  const slots = slotsFor(pattern, slotIndex);
+  const seed = level * 1000003 + index * 97;
+  const [reply_1, reply_2, reply_3, reply_4, reply_5] = five(pattern.replies(slots), seed);
+  const topics = topicsForGoal(pattern.goal, index, level);
+  return {
+    id: index,
+    level,
+    bot_message: pattern.bot(slots),
+    reply_1,
+    reply_2,
+    reply_3,
+    reply_4,
+    reply_5,
+    topic1: topics.topic1,
+    topic2: topics.topic2,
+    topic3: topics.topic3
+  };
+}
+
+// src/engine/chatTurns.ts
+var SUBJECTS2 = [
+  "math",
+  "English",
+  "science",
+  "art",
+  "music",
+  "history",
+  "PE",
+  "reading",
+  "writing",
+  "geography"
+];
+var HOBBIES2 = [
+  "football",
+  "drawing",
+  "reading",
+  "singing",
+  "dancing",
+  "swimming",
+  "cooking",
+  "gaming",
+  "cycling",
+  "painting"
+];
+var CITIES2 = [
+  "Tokyo",
+  "Seoul",
+  "London",
+  "Paris",
+  "New York",
+  "Manila",
+  "Hanoi",
+  "Bangkok",
+  "Cairo",
+  "Madrid",
+  "Beijing",
+  "Sydney"
+];
+var FEELINGS2 = [
+  "happy",
+  "tired",
+  "excited",
+  "nervous",
+  "okay",
+  "great",
+  "bored",
+  "hungry",
+  "sleepy",
+  "fine"
+];
 var L12 = [
   {
     goal: "Speaking and introductions",
@@ -1390,7 +1633,7 @@ var L22 = [
       `I come from ${c.city}.`,
       `From ${c.city}.`,
       `I live in ${c.city}.`,
-      `I am from ${pick(CITIES, c.age)}.`
+      `I am from ${pick(CITIES2, c.age)}.`
     ]
   },
   {
@@ -1411,7 +1654,7 @@ var L22 = [
       `My favorite subject is ${c.subject}.`,
       `I like ${c.subject}.`,
       `${cap(c.subject)}.`,
-      `I love ${pick(SUBJECTS, c.age)}.`,
+      `I love ${pick(SUBJECTS2, c.age)}.`,
       `Math is my favorite.`
     ]
   },
@@ -1488,7 +1731,7 @@ var L22 = [
       `I like ${c.hobby}.`,
       `I love ${c.hobby}.`,
       `I like to play.`,
-      `I like ${pick(HOBBIES, c.age)}.`,
+      `I like ${pick(HOBBIES2, c.age)}.`,
       `I like reading books.`
     ]
   },
@@ -1545,7 +1788,7 @@ var L32 = [
       `My favorite class was ${c.subject}.`,
       `I liked ${c.subject} today.`,
       `Art was fun.`,
-      `I enjoyed ${pick(SUBJECTS, c.age)}.`,
+      `I enjoyed ${pick(SUBJECTS2, c.age)}.`,
       `PE was my favorite.`
     ]
   },
@@ -1579,7 +1822,7 @@ var L32 = [
       `I am ${c.feeling} today.`,
       "I feel great.",
       `A little tired, but okay.`,
-      `I feel ${pick(FEELINGS, c.age)}.`
+      `I feel ${pick(FEELINGS2, c.age)}.`
     ]
   },
   {
@@ -1994,30 +2237,10 @@ var BY_LEVEL2 = {
   6: [...L52, ...L62]
 };
 function generateChatTurn(level, id, bankSize = BANK_SIZE) {
-  const size = Math.max(1, Math.floor(bankSize));
-  const index = (id % size + size) % size;
-  const templates = BY_LEVEL2[level];
-  const template = templates[index % templates.length];
-  const ctx = makeCtx(level, index);
-  const seed = level * 1000003 + index * 97;
-  const [reply_1, reply_2, reply_3, reply_4, reply_5] = five(template.replies(ctx), seed);
-  const topics = topicsForGoal(template.goal, index, level);
-  return {
-    id: index,
-    level,
-    bot_message: template.bot(ctx),
-    reply_1,
-    reply_2,
-    reply_3,
-    reply_4,
-    reply_5,
-    topic1: topics.topic1,
-    topic2: topics.topic2,
-    topic3: topics.topic3
-  };
+  return generateUniqueChatTurn(level, id, bankSize);
 }
 
-// ../../scripts/export-english-age.ts
+// scripts/export-english-age.ts
 var root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 var HEADER = [
   "bot_message",

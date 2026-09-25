@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CSV banks: ignore everything except zip archives
+csv/**
+!csv/**/
+!csv/**/*.zip
+scripts/_*.bundle.mjs

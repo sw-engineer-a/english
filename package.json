@@ -9,10 +9,13 @@
     "start": "node server.js",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "bundle:engine": "npx esbuild src/engine/chatTurns.ts --bundle --platform=node --format=esm --outfile=scripts/_chatTurns.bundle.mjs && npx esbuild src/engine/topics.ts --bundle --platform=node --format=esm --outfile=scripts/_topics.bundle.mjs",
+    "regen:ages": "npm run bundle:engine && node scripts/regen-english-ages.mjs",
+    "check:unique": "npm run bundle:engine && node scripts/check-unique-quick.mjs",
     "export:csv": "node scripts/export-csv.mjs",
     "export:english": "node scripts/export-csv.mjs english",
     "export:doctor": "node scripts/export-csv.mjs doctor",
-    "export:ages-06-08": "node scripts/export-english-age.mjs 06-08",
+    "export:ages": "node scripts/export-english-age.mjs",
     "export:ages-all": "node scripts/export-english-age.mjs all"
   },
   "dependencies": {

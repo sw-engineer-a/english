@@ -28,3 +28,4 @@ csv/**
 !csv/**/
 !csv/**/*.zip
 scripts/_*.bundle.mjs
+csv/doctor/cancer/*

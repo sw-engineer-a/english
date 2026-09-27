@@ -1,4 +1,5 @@
-export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
+/** English uses 1–6. AI Doctor uses women’s health topic ids (see FEMALE_CONDITIONS). */
+export type LevelId = number
 export type AppMode = 'english' | 'doctor'
 
 export interface TutorPersona {
@@ -72,7 +73,7 @@ export const MODE_LABELS: Record<AppMode, { title: string; subtitle: string; ico
   },
   doctor: {
     title: 'AI Doctor',
-    subtitle: 'Practice health English by clinic topic. Not real medical advice.',
+    subtitle: 'Describe symptoms and receive a diagnosis for women’s health conditions.',
     icon: '🩺',
   },
 }

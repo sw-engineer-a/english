@@ -1,4 +1,4 @@
-import { DOCTOR_LEVELS } from '../data/doctorLevels'
+import { FEMALE_LEVELS } from '../data/femaleConditions'
 import { LEVELS } from '../data/levels'
 import { BANK_SIZE, MODE_LABELS, type AppMode, type LevelId, type LevelStats } from '../types'
 
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function LevelSelect({ mode, stats, onChoose, onBack }: Props) {
-  const levels = mode === 'doctor' ? DOCTOR_LEVELS : LEVELS
+  const levels = mode === 'doctor' ? FEMALE_LEVELS : LEVELS
   const modeInfo = MODE_LABELS[mode]
 
   return (
@@ -22,11 +22,12 @@ export function LevelSelect({ mode, stats, onChoose, onBack }: Props) {
         <p className="eyebrow">
           {modeInfo.icon} {modeInfo.title}
         </p>
-        <h1>{mode === 'doctor' ? 'Choose a clinic topic' : 'Choose your English age level'}</h1>
+        <h1>{mode === 'doctor' ? 'Choose a women’s health topic' : 'Choose your English age level'}</h1>
         <p className="lede">{modeInfo.subtitle}</p>
         {mode === 'doctor' ? (
           <p className="disclaimer">
-            AI Doctor is for English practice about health talks only. It is not real medical advice.
+            Tell the doctor your symptoms. The reply is a diagnosis from those symptoms. Go to
+            urgent care for severe pain, fainting, very heavy bleeding, fever, or trouble breathing.
           </p>
         ) : null}
       </header>
@@ -46,7 +47,7 @@ export function LevelSelect({ mode, stats, onChoose, onBack }: Props) {
             >
               <span className="level-avatar">{level.tutor.avatar}</span>
               <span className="level-kicker">
-                {mode === 'doctor' ? `Topic ${level.id}` : `Level ${level.id}`} · {level.cefr}
+                {mode === 'doctor' ? 'Female health' : `Level ${level.id}`} · {level.cefr}
               </span>
               <strong>{level.title}</strong>
               <span className="ages">{level.ages}</span>
@@ -60,7 +61,7 @@ export function LevelSelect({ mode, stats, onChoose, onBack }: Props) {
                 {BANK_SIZE.toLocaleString()} chats · 5 replies each · CSV: {mode}
               </span>
               <span className="stats-line">
-                {s.seen === 0
+                {!s || s.seen === 0
                   ? 'Tap to start chatting'
                   : `${s.seen.toLocaleString()} replies practiced`}
               </span>

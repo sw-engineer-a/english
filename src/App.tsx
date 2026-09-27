@@ -11,7 +11,14 @@ export default function App() {
   const [level, setLevel] = useState<LevelId | null>(null)
 
   if (!mode) {
-    return <ModeSelect onChoose={setMode} />
+    return (
+      <ModeSelect
+        onChoose={(next) => {
+          setMode(next)
+          setLevel(null)
+        }}
+      />
+    )
   }
 
   if (!level) {

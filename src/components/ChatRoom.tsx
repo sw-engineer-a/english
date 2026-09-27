@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadLevelCsv, type ChatTurn } from '../csv/loadLevelCsv'
-import { getDoctorLevel } from '../data/doctorLevels'
+import { getFemaleLevel } from '../data/femaleConditions'
 import { getLevel } from '../data/levels'
 import { resolveTopicIds } from '../engine/topics'
 import { speak, stopSpeaking } from '../speech'
@@ -20,12 +20,13 @@ function uid(): string {
 }
 
 export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
-  const level = mode === 'doctor' ? getDoctorLevel(levelId) : getLevel(levelId)
+  const level = mode === 'doctor' ? getFemaleLevel(levelId) : getLevel(levelId)
   const scroller = useRef<HTMLDivElement>(null)
   const [turns, setTurns] = useState<ChatTurn[] | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [turnId, setTurnId] = useState(0)
+  const [dialogueStep, setDialogueStep] = useState(0)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [locked, setLocked] = useState(false)
   const [voiceOn, setVoiceOn] = useState(true)
@@ -53,15 +54,20 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
         const first = rows[start]
         setTurns(rows)
         setTurnId(start)
-        setMessages([
-          { id: uid(), role: 'tutor', text: level.tutor.greeting, kind: 'hello' },
-          {
-            id: `turn-${first.id}`,
-            role: 'tutor',
-            text: first.bot_message,
-            kind: 'question',
-          },
-        ])
+        setDialogueStep(0)
+        setMessages(
+          mode === 'doctor' && first.exchanges
+            ? [{ id: uid(), role: 'tutor', text: level.tutor.greeting, kind: 'hello' }]
+            : [
+                { id: uid(), role: 'tutor', text: level.tutor.greeting, kind: 'hello' },
+                {
+                  id: `turn-${first.id}`,
+                  role: 'tutor',
+                  text: first.bot_message,
+                  kind: 'question',
+                },
+              ],
+        )
         setLoading(false)
       })
       .catch((err: Error) => {
@@ -93,6 +99,18 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
     const next = turns[nextId]
     setTurnId(nextId)
     setLocked(false)
+    if (mode === 'doctor' && next.exchanges) {
+      setDialogueStep(0)
+      setMessages([
+        {
+          id: uid(),
+          role: 'tutor',
+          text: level.tutor.greeting,
+          kind: 'hello',
+        },
+      ])
+      return
+    }
     setMessages((prev) => {
       const bubble: ChatMessage = {
         id: `turn-${next.id}`,
@@ -113,6 +131,25 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
         : []
       return [...prev, ...cue, bubble]
     })
+  }
+
+  function sendSymptom() {
+    if (locked || !turn?.exchanges) return
+    const line = turn.exchanges[dialogueStep]
+    if (!line) return
+    const last = dialogueStep >= turn.exchanges.length - 1
+    setMessages((prev) => [
+      ...prev,
+      { id: uid(), role: 'user', text: line.patient },
+      { id: uid(), role: 'tutor', text: line.bot, kind: 'question' },
+    ])
+    if (last) {
+      setLocked(true)
+      onStats(recordAnswer(stats, mode, levelId, turn.id, true))
+      setSession((current) => ({ chats: current.chats + 1 }))
+      return
+    }
+    setDialogueStep((step) => step + 1)
   }
 
   function handleReply(index: number) {
@@ -229,7 +266,12 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
       </div>
 
       <footer className="composer">
-        {!loading && !error && turn && !locked ? (
+        {!loading && !error && turn && !locked && mode === 'doctor' && turn.exchanges ? (
+          <button type="button" className="next-btn symptom-btn" onClick={sendSymptom}>
+            {turn.exchanges[dialogueStep]?.patient}
+          </button>
+        ) : null}
+        {!loading && !error && turn && !locked && !(mode === 'doctor' && turn.exchanges) ? (
           <div className="choices">
             {turn.replies.map((reply, index) => (
               <button key={`${turn.id}-${index}`} type="button" onClick={() => handleReply(index)}>
@@ -241,7 +283,7 @@ export function ChatRoom({ mode, levelId, stats, onStats, onBack }: Props) {
         ) : null}
         {!loading && !error && turn && locked ? (
           <button type="button" className="next-btn" onClick={nextChat}>
-            {level.tutor.next[0]} →
+            {mode === 'doctor' ? 'Next conversation' : level.tutor.next[0]} →
           </button>
         ) : null}
         <div className="jump-row">

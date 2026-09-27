@@ -8,11 +8,10 @@ export function ModeSelect({ onChoose }: Props) {
   return (
     <div className="home">
       <header className="home-hero">
-        <p className="eyebrow">English practice hub</p>
+        <p className="eyebrow">Chat hub</p>
         <h1>Choose a chat mode</h1>
         <p className="lede">
-          Practice English Learning or AI Doctor conversations. Each mode uses its own CSV chat
-          data by age level.
+          English Learning is language practice. AI Doctor takes symptoms and gives a diagnosis.
         </p>
       </header>
 

@@ -1,10 +1,12 @@
 import type { AppMode, LevelId } from '../types'
-import { DOCTOR_CSV_FILES } from '../data/doctorLevels'
+import { FEMALE_CSV_FILES } from '../data/femaleConditions'
 
 export interface ChatTurn {
   id: number
   bot_message: string
   replies: [string, string, string, string, string]
+  /** Doctor chats: patient speaks, then the bot answers, over several turns. */
+  exchanges?: { patient: string; bot: string }[]
   /** Topic table IDs (0 / missing = unused). */
   topic1?: number
   topic2?: number
@@ -21,7 +23,7 @@ const ENGLISH_FILES: Record<LevelId, string> = {
 }
 
 export function csvPath(mode: AppMode, level: LevelId): string {
-  const file = mode === 'doctor' ? DOCTOR_CSV_FILES[level] : ENGLISH_FILES[level]
+  const file = mode === 'doctor' ? FEMALE_CSV_FILES[level] : ENGLISH_FILES[level]
   return `/csv/${mode}/${file}`
 }
 
@@ -86,6 +88,8 @@ export function parseChatCsv(text: string): ChatTurn[] {
   const t1 = idx('topic1')
   const t2 = idx('topic2')
   const t3 = idx('topic3')
+  const patient1 = idx('patient_1')
+  const dialogue = patient1 >= 0 && idx('bot_1') >= 0
 
   const turns: ChatTurn[] = []
 
@@ -94,6 +98,26 @@ export function parseChatCsv(text: string): ChatTurn[] {
     if (!line || !line.trim()) continue
     const cells = parseCsvLine(line)
 
+    if (dialogue) {
+      const exchanges = [1, 2, 3, 4].map((n) => ({
+        patient: cells[idx(`patient_${n}`)] ?? '',
+        bot: cells[idx(`bot_${n}`)] ?? '',
+      }))
+      if (!exchanges[0].patient || !exchanges[0].bot) continue
+      turns.push({
+        id: turns.length,
+        bot_message: exchanges[0].bot,
+        replies: [
+          exchanges[0].patient,
+          exchanges[1].patient,
+          exchanges[2].patient,
+          exchanges[3].patient,
+          'Next conversation',
+        ],
+        exchanges,
+      })
+      continue
+    }
     if (botIdx < 0 || r1 < 0 || r2 < 0 || r3 < 0 || r4 < 0 || r5 < 0) {
       if (cells.length < 6) continue
       const [bot_message, a, b, c, d, e, topic1, topic2, topic3] = cells

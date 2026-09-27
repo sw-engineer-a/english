@@ -1,6 +1,8 @@
+import { FEMALE_CONDITIONS } from './data/femaleConditions'
 import type { AppMode, LevelId, LevelStats } from './types'
 
 const KEY = 'english-app-stats-v2'
+const ENGLISH_IDS: LevelId[] = [1, 2, 3, 4, 5, 6]
 
 const empty = (): LevelStats => ({
   seen: 0,
@@ -10,8 +12,18 @@ const empty = (): LevelStats => ({
   lastId: 0,
 })
 
-function emptyMode(): Record<LevelId, LevelStats> {
-  return { 1: empty(), 2: empty(), 3: empty(), 4: empty(), 5: empty(), 6: empty() }
+function emptyFor(ids: LevelId[]): Record<LevelId, LevelStats> {
+  const out: Record<LevelId, LevelStats> = {}
+  for (const id of ids) out[id] = empty()
+  return out
+}
+
+function emptyEnglish(): Record<LevelId, LevelStats> {
+  return emptyFor(ENGLISH_IDS)
+}
+
+function emptyDoctor(): Record<LevelId, LevelStats> {
+  return emptyFor(FEMALE_CONDITIONS.map((c) => c.id))
 }
 
 export type ModeStats = Record<AppMode, Record<LevelId, LevelStats>>
@@ -20,12 +32,12 @@ export function loadStats(): ModeStats {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) {
-      // migrate old english-only stats if present
       const legacy = localStorage.getItem('english-learner-stats-v1')
       if (legacy) {
         const parsed = JSON.parse(legacy) as Partial<Record<LevelId, LevelStats>>
         return {
           english: {
+            ...emptyEnglish(),
             1: { ...empty(), ...parsed[1] },
             2: { ...empty(), ...parsed[2] },
             3: { ...empty(), ...parsed[3] },
@@ -33,18 +45,18 @@ export function loadStats(): ModeStats {
             5: { ...empty(), ...parsed[5] },
             6: { ...empty(), ...parsed[6] },
           },
-          doctor: emptyMode(),
+          doctor: emptyDoctor(),
         }
       }
-      return { english: emptyMode(), doctor: emptyMode() }
+      return { english: emptyEnglish(), doctor: emptyDoctor() }
     }
     const parsed = JSON.parse(raw) as Partial<ModeStats>
     return {
-      english: { ...emptyMode(), ...parsed.english },
-      doctor: { ...emptyMode(), ...parsed.doctor },
+      english: { ...emptyEnglish(), ...parsed.english },
+      doctor: { ...emptyDoctor(), ...parsed.doctor },
     }
   } catch {
-    return { english: emptyMode(), doctor: emptyMode() }
+    return { english: emptyEnglish(), doctor: emptyDoctor() }
   }
 }
 
@@ -59,7 +71,7 @@ export function recordAnswer(
   questionId: number,
   correct: boolean,
 ): ModeStats {
-  const current = stats[mode][level]
+  const current = stats[mode][level] ?? empty()
   const streak = correct ? current.streak + 1 : 0
   const next: ModeStats = {
     ...stats,

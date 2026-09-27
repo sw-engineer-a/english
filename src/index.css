@@ -131,6 +131,14 @@ button {
   background: linear-gradient(135deg, #1abc9c, #3498db);
 }
 
+.mode-card.mode-female {
+  background: linear-gradient(160deg, #fff0f6, #ffffff 45%);
+}
+
+.mode-card.mode-female .mode-icon {
+  background: linear-gradient(135deg, #e91e63, #f48fb1);
+}
+
 .mode-card strong {
   font-size: 1.5rem;
 }
@@ -400,6 +408,13 @@ button {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
   font-size: 1.05rem;
+}
+
+.symptom-btn {
+  border-radius: 18px;
+  text-align: left;
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .jump-row {

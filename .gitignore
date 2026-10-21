@@ -24,8 +24,19 @@ dist-ssr
 *.sw?
 
 # CSV banks: ignore everything except zip archives
-csv/**
-!csv/**/
-!csv/**/*.zip
-scripts/_*.bundle.mjs
-csv/doctor/cancer/*
+web/csv/**
+!web/csv/**/
+!web/csv/**/*.zip
+web/scripts/_*.bundle.mjs
+web/csv/doctor/cancer/*
+
+# Unity Android project (mobile/)
+mobile/Library/
+mobile/Temp/
+mobile/Obj/
+mobile/Logs/
+mobile/UserSettings/
+mobile/Build/
+mobile/MemoryCaptures/
+mobile/*.csproj
+mobile/*.sln

@@ -30,6 +30,10 @@ web/csv/**
 web/scripts/_*.bundle.mjs
 web/csv/doctor/cancer/*
 
+# NDK build output (encryption/)
+encryption/obj/
+encryption/libs/
+
 # Unity Android project (mobile/)
 mobile/Library/
 mobile/Temp/
@@ -40,3 +44,4 @@ mobile/Build/
 mobile/MemoryCaptures/
 mobile/*.csproj
 mobile/*.sln
+mobile/mobile/

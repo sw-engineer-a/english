@@ -49,10 +49,55 @@ public static class EnglishBank
     public static string Status { get { return status; } }
     public static string[] TopicNames { get { return topicNames; } }
 
+    public static void Abort()
+    {
+        busy = false;
+        if (!ready) status = "English lines are not loaded.";
+    }
+
+    public static bool LoadNow(int nextLevel)
+    {
+        nextLevel = Mathf.Clamp(nextLevel, 1, Packs.Length);
+        if (ready && level == nextLevel && all.Count > 0) return true;
+
+        busy = true;
+        ready = false;
+        level = nextLevel;
+        all.Clear();
+        topicNames = new string[0];
+        byTopic = new List<EnglishLine>[0];
+        status = "Opening English lines...";
+
+        string fileName = Packs[nextLevel - 1];
+        byte[] bytes = null;
+        try
+        {
+            string path = Path.Combine(Path.Combine(Application.streamingAssetsPath, "english"), fileName);
+            if (File.Exists(path)) bytes = File.ReadAllBytes(path);
+        }
+        catch (Exception error)
+        {
+            Debug.LogWarning(error.Message);
+            bytes = null;
+        }
+
+        if (bytes == null || !Apply(bytes))
+        {
+            status = "Missing " + fileName;
+            busy = false;
+            ready = false;
+            return false;
+        }
+
+        ready = all.Count > 0;
+        busy = false;
+        status = ready ? "English ready." : "English pack was empty.";
+        return ready;
+    }
+
     public static IEnumerator Load(int nextLevel)
     {
         nextLevel = Mathf.Clamp(nextLevel, 1, Packs.Length);
-        if (busy && level == nextLevel) yield break;
         if (ready && level == nextLevel && all.Count > 0) yield break;
 
         busy = true;
@@ -63,12 +108,14 @@ public static class EnglishBank
         byTopic = new List<EnglishLine>[0];
         status = "Opening English lines...";
 
+        string fileName = Packs[nextLevel - 1];
         byte[] bytes = null;
-        yield return ReadPack(Packs[nextLevel - 1], delegate(byte[] data) { bytes = data; });
+        yield return ReadPack(fileName, delegate(byte[] data) { bytes = data; });
         if (bytes == null || !Apply(bytes))
         {
-            status = "Missing " + Packs[nextLevel - 1];
+            status = "Missing " + fileName;
             busy = false;
+            ready = false;
             yield break;
         }
 

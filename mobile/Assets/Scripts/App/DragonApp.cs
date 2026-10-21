@@ -39,10 +39,20 @@ public class DragonApp : MonoBehaviour
     bool scoreCenturyPaid;
     bool conversationLocked;
     bool lowWarned;
+    bool pendingGreet;
+    bool englishWasReady;
     Coroutine pendingAsk;
     string lineBuffer = "";
     InputField nameField;
     InputField dobField;
+    Button twoWayButton;
+    Button oneWayButton;
+    Button startButton;
+    Button captionButton;
+    Button characterHitButton;
+    RectTransform micImpulseRoot;
+    Image[] micBars;
+    Text micImpulseLabel;
 
     static readonly Color Ink = new Color(0.18f, 0.24f, 0.30f, 1f);
     static readonly Color Cream = new Color(1f, 0.97f, 0.93f, 0.94f);
@@ -82,16 +92,120 @@ public class DragonApp : MonoBehaviour
 
     void Update()
     {
-        if (EnglishBank.Ready || captionText == null || !profile.caption) return;
-        captionText.text = EnglishBank.Status;
+        bool ready = EnglishBank.Ready;
+        if (ready != englishWasReady)
+        {
+            englishWasReady = ready;
+            ApplyTalkInteractable();
+            if (ready && pendingGreet && !conversationLocked)
+            {
+                pendingGreet = false;
+                Say("Welcome to GOGO English Conversation Session. My name is GOGO. Please ask questions in English.", "bow");
+            }
+            else if (ready)
+                RefreshCaptionAfterLoad();
+        }
+
+        UpdateMicImpulse();
+
+        if (captionText == null) return;
+
+        if (voice != null && voice.Listening)
+        {
+#if UNITY_EDITOR || !UNITY_ANDROID
+            if (typeField != null) voice.SetLiveTyped(typeField.text);
+#endif
+            string live = voice.LiveCaption;
+            if (!string.IsNullOrEmpty(live))
+            {
+                captionText.text = "You: " + live;
+            }
+            else if (voice.UsesTypedInput)
+            {
+                if (voice.VoiceHeard)
+                    captionText.text = "● Mic hears you — type English, then release";
+                else if (voice.MicOpen || voice.MicSeen)
+                    captionText.text = "● Mic on — type English here, then release";
+                else
+                    captionText.text = "● Type English in the box, then release";
+            }
+            else if (voice.VoiceHeard)
+                captionText.text = "● Hearing you… keep speaking";
+            else if (!voice.MicOpen)
+                captionText.text = "● No mic — type English, then release";
+            else
+                captionText.text = "● Mic on — speak English now";
+            return;
+        }
+
+        if (!ready)
+            captionText.text = EnglishBank.Status;
+    }
+
+    void RefreshCaptionAfterLoad()
+    {
+        if (captionText == null) return;
+        if (!string.IsNullOrEmpty(lineBuffer) && profile.caption)
+            captionText.text = lineBuffer;
+        else if (captionText.text.StartsWith("Opening English") || captionText.text == EnglishBank.Status)
+            captionText.text = "";
+    }
+
+    bool TalkBlocked()
+    {
+        return conversationLocked || !EnglishBank.Ready;
+    }
+
+    void ApplyTalkInteractable()
+    {
+        bool on = !TalkBlocked();
+        SetButtonOn(twoWayButton, on);
+        SetButtonOn(oneWayButton, on);
+        SetButtonOn(startButton, on);
+        SetButtonOn(captionButton, on);
+        SetButtonOn(characterHitButton, on);
+        if (typeField != null) typeField.interactable = on;
+        if (!on && captionText != null && !EnglishBank.Ready)
+            captionText.text = EnglishBank.Status;
+    }
+
+    static void SetButtonOn(Button button, bool on)
+    {
+        if (button == null) return;
+        button.interactable = on;
+        var image = button.GetComponent<Image>();
+        if (image != null)
+        {
+            Color baseColor = image.color;
+            baseColor.a = on ? 1f : 0.4f;
+            image.color = baseColor;
+            var colors = button.colors;
+            colors.normalColor = baseColor;
+            colors.highlightedColor = Color.Lerp(baseColor, Color.white, 0.18f);
+            colors.pressedColor = Color.Lerp(baseColor, Color.black, 0.14f);
+            colors.disabledColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.35f);
+            button.colors = colors;
+        }
     }
 
     void EnsureEnglish()
     {
         var level = Mathf.Clamp(profile.level, 1, 6);
-        if (EnglishBank.Level == level && (EnglishBank.Ready || EnglishBank.Busy)) return;
-        if (englishLoad != null) StopCoroutine(englishLoad);
+        if (EnglishBank.Ready && EnglishBank.Level == level) return;
+
+        if (englishLoad != null)
+        {
+            StopCoroutine(englishLoad);
+            englishLoad = null;
+            EnglishBank.Abort();
+        }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
         englishLoad = StartCoroutine(EnglishBank.Load(level));
+#else
+        EnglishBank.LoadNow(level);
+        englishWasReady = EnglishBank.Ready;
+#endif
     }
 
     void OnApplicationPause(bool paused)
@@ -222,20 +336,32 @@ public class DragonApp : MonoBehaviour
         typeField = null;
         nameField = null;
         dobField = null;
+        twoWayButton = null;
+        oneWayButton = null;
+        startButton = null;
+        captionButton = null;
+        characterHitButton = null;
+        micImpulseRoot = null;
+        micBars = null;
+        micImpulseLabel = null;
     }
 
     void EnterTalk(bool greet)
     {
         conversationLocked = profile.strength < 10 || profile.mood < 10;
+        pendingGreet = greet && !conversationLocked;
+        englishWasReady = EnglishBank.Ready;
         ShowTalk();
         RefreshStats();
         if (conversationLocked)
         {
+            pendingGreet = false;
             Say("Sorry, I am too tired to continue the conversation. Please excuse me. See you tomorrow.", "leave");
             return;
         }
-        if (greet)
+        if (greet && EnglishBank.Ready)
         {
+            pendingGreet = false;
             Say("Welcome to GOGO English Conversation Session. My name is GOGO. Please ask questions in English.", "bow");
         }
     }
@@ -254,9 +380,9 @@ public class DragonApp : MonoBehaviour
         characterMotion.bobSpeed = 1.4f;
         characterMotion.SetBob(true);
 
-        var hit = SoftButton(body, "", new Color(1, 1, 1, 0.01f), 24);
-        SetRect(hit.GetComponent<RectTransform>(), new Vector2(0.14f, 0.42f), new Vector2(0.86f, 0.9f));
-        hit.onClick.AddListener(TouchCharacter);
+        characterHitButton = SoftButton(body, "", new Color(1, 1, 1, 0.01f), 24);
+        SetRect(characterHitButton.GetComponent<RectTransform>(), new Vector2(0.14f, 0.42f), new Vector2(0.86f, 0.9f));
+        characterHitButton.onClick.AddListener(TouchCharacter);
 
         var nameChip = SoftCard(body, new Vector2(0.3f, 0.365f), new Vector2(0.7f, 0.415f), Cream);
         characterText = Label(nameChip, face, 30, TextAnchor.MiddleCenter, Ink);
@@ -272,39 +398,49 @@ public class DragonApp : MonoBehaviour
         SetRect(captionText.rectTransform, new Vector2(0.05f, 0.1f), new Vector2(0.95f, 0.9f));
         captionMotion = speech.gameObject.AddComponent<UiMotion>();
 
+#if UNITY_ANDROID && !UNITY_EDITOR
         typeField = SoftInput(body, "Type English, then hold Start", new Vector2(0.08f, 0.145f), new Vector2(0.92f, 0.2f));
+#else
+        typeField = SoftInput(body, "Type English here, then hold Start", new Vector2(0.08f, 0.145f), new Vector2(0.92f, 0.2f));
+#endif
 
         Color twoColor = talkMode == "two" ? Teal : SoftTeal;
         Color oneColor = talkMode == "one" ? Teal : SoftTeal;
         Color twoText = talkMode == "two" ? Color.white : Ink;
         Color oneText = talkMode == "one" ? Color.white : Ink;
 
-        var two = SoftButton(body, "Two way", twoColor, 26);
-        SetRect(two.GetComponent<RectTransform>(), new Vector2(0.08f, 0.07f), new Vector2(0.32f, 0.125f));
-        SetButtonLabelColor(two, twoText);
-        two.onClick.AddListener(() => { talkMode = "two"; ShowTalk(); });
+        twoWayButton = SoftButton(body, "Two way", twoColor, 26);
+        SetRect(twoWayButton.GetComponent<RectTransform>(), new Vector2(0.08f, 0.07f), new Vector2(0.32f, 0.125f));
+        SetButtonLabelColor(twoWayButton, twoText);
+        twoWayButton.onClick.AddListener(() => { if (TalkBlocked()) return; talkMode = "two"; ShowTalk(); });
 
-        var start = SoftButton(body, "Hold to talk", Coral, 28);
-        SetRect(start.GetComponent<RectTransform>(), new Vector2(0.35f, 0.06f), new Vector2(0.65f, 0.135f));
-        var hold = start.gameObject.AddComponent<HoldButton>();
+        startButton = SoftButton(body, "Hold to talk", Coral, 28);
+        SetRect(startButton.GetComponent<RectTransform>(), new Vector2(0.35f, 0.06f), new Vector2(0.65f, 0.135f));
+        var hold = startButton.gameObject.AddComponent<HoldButton>();
         hold.App = this;
+        BuildMicImpulse(body);
 
-        var one = SoftButton(body, "One way", oneColor, 26);
-        SetRect(one.GetComponent<RectTransform>(), new Vector2(0.68f, 0.07f), new Vector2(0.92f, 0.125f));
-        SetButtonLabelColor(one, oneText);
-        one.onClick.AddListener(() => { talkMode = "one"; StopAsk(); ShowTalk(); });
+        oneWayButton = SoftButton(body, "One way", oneColor, 26);
+        SetRect(oneWayButton.GetComponent<RectTransform>(), new Vector2(0.68f, 0.07f), new Vector2(0.92f, 0.125f));
+        SetButtonLabelColor(oneWayButton, oneText);
+        oneWayButton.onClick.AddListener(() => { if (TalkBlocked()) return; talkMode = "one"; StopAsk(); ShowTalk(); });
 
-        var caption = SoftButton(body, profile.caption ? "Caption on" : "Caption off", new Color(0.42f, 0.48f, 0.52f, 1f), 24);
-        SetRect(caption.GetComponent<RectTransform>(), new Vector2(0.3f, 0.028f), new Vector2(0.7f, 0.06f));
-        caption.onClick.AddListener(() => { profile.caption = !profile.caption; SaveGame.SaveProfile(profile); ShowTalk(); });
+        captionButton = SoftButton(body, profile.caption ? "Caption on" : "Caption off", new Color(0.42f, 0.48f, 0.52f, 1f), 24);
+        SetRect(captionButton.GetComponent<RectTransform>(), new Vector2(0.3f, 0.028f), new Vector2(0.7f, 0.06f));
+        captionButton.onClick.AddListener(() => { if (TalkBlocked()) return; profile.caption = !profile.caption; SaveGame.SaveProfile(profile); ShowTalk(); });
 
-        if (captionText != null) captionText.text = profile.caption ? lineBuffer : "";
-        if (captionMotion != null && profile.caption && !string.IsNullOrEmpty(lineBuffer)) captionMotion.FadeIn(0.25f);
+        if (!EnglishBank.Ready)
+            captionText.text = EnglishBank.Status;
+        else if (captionText != null)
+            captionText.text = profile.caption ? lineBuffer : "";
+        if (captionMotion != null && profile.caption && !string.IsNullOrEmpty(lineBuffer) && EnglishBank.Ready)
+            captionMotion.FadeIn(0.25f);
+        ApplyTalkInteractable();
     }
 
     public void PressStart()
     {
-        if (conversationLocked) return;
+        if (TalkBlocked()) return;
         StopAsk();
         voice.Stop();
         if (talkMode == "") talkMode = "one";
@@ -313,26 +449,159 @@ public class DragonApp : MonoBehaviour
 #endif
         voice.BeginListen();
         if (animText != null) animText.text = "Listening";
+        if (captionText != null)
+        {
+            captionText.text = voice.UsesTypedInput
+                ? "● Mic on — type English, then release"
+                : "● Listening… speak English now";
+        }
+        ShowMicImpulse(true);
+        if (voice.UsesTypedInput && typeField != null)
+            typeField.ActivateInputField();
     }
 
     public void ReleaseStart()
     {
-        if (conversationLocked) return;
+        if (TalkBlocked()) return;
         StartCoroutine(FinishListen());
+    }
+
+    void BuildMicImpulse(Transform parent)
+    {
+        micImpulseRoot = SoftCard(parent, new Vector2(0.22f, 0.138f), new Vector2(0.78f, 0.208f), new Color(0.12f, 0.18f, 0.22f, 0.95f));
+        micImpulseRoot.gameObject.name = "MicImpulse";
+        micImpulseLabel = Label(micImpulseRoot, "Mic 0%", 20, TextAnchor.MiddleLeft, new Color(0.9f, 0.95f, 0.97f, 1f));
+        SetRect(micImpulseLabel.rectTransform, new Vector2(0.03f, 0.1f), new Vector2(0.42f, 0.9f));
+
+        const int barCount = 12;
+        micBars = new Image[barCount];
+        for (int i = 0; i < barCount; i++)
+        {
+            var go = new GameObject("Bar" + i);
+            go.transform.SetParent(micImpulseRoot, false);
+            var rect = go.AddComponent<RectTransform>();
+            float x0 = 0.44f + i * 0.045f;
+            rect.anchorMin = new Vector2(x0, 0.18f);
+            rect.anchorMax = new Vector2(x0 + 0.035f, 0.82f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            var image = go.AddComponent<Image>();
+            image.color = new Color(0.35f, 0.85f, 0.72f, 1f);
+            image.raycastTarget = false;
+            micBars[i] = image;
+        }
+        ShowMicImpulse(false);
+    }
+
+    void ShowMicImpulse(bool on)
+    {
+        if (micImpulseRoot != null) micImpulseRoot.gameObject.SetActive(on);
+    }
+
+    void UpdateMicImpulse()
+    {
+        bool listening = voice != null && voice.Listening;
+        if (micImpulseRoot != null && micImpulseRoot.gameObject.activeSelf != listening)
+            ShowMicImpulse(listening);
+        if (!listening || micBars == null) return;
+
+        float level = voice.MicLevel;
+        int pct = Mathf.RoundToInt(level * 100f);
+        if (micImpulseLabel != null)
+        {
+            string status = voice.MicStatus;
+            if (string.IsNullOrEmpty(status)) status = "Mic";
+            micImpulseLabel.text = status + "  " + pct + "%";
+            micImpulseLabel.color = voice.VoiceHeard
+                ? new Color(0.45f, 1f, 0.7f, 1f)
+                : new Color(0.9f, 0.95f, 0.97f, 1f);
+        }
+
+        for (int i = 0; i < micBars.Length; i++)
+        {
+            float gate = (i + 1) / (float)micBars.Length;
+            float phase = Mathf.Abs(Mathf.Sin(Time.time * (12f + i * 0.7f) + i));
+            float lit = level >= gate * 0.55f ? Mathf.Clamp01(level * (0.5f + 0.5f * phase)) : level * 0.15f;
+            float height = Mathf.Lerp(0.16f, 1f, lit);
+            var rect = micBars[i].rectTransform;
+            float mid = 0.5f;
+            float half = height * 0.34f;
+            float x0 = 0.44f + i * 0.045f;
+            rect.anchorMin = new Vector2(x0, mid - half);
+            rect.anchorMax = new Vector2(x0 + 0.035f, mid + half);
+            float hot = Mathf.Clamp01((level - 0.25f) / 0.75f);
+            micBars[i].color = Color.Lerp(
+                new Color(0.3f, 0.9f, 0.75f, 1f),
+                new Color(1f, 0.5f, 0.15f, 1f),
+                hot);
+        }
+
+        if (startButton != null)
+        {
+            float pulse = 1f + level * 0.12f;
+            startButton.transform.localScale = new Vector3(pulse, pulse, 1f);
+        }
     }
 
     IEnumerator FinishListen()
     {
+        bool hadMic = voice.MicSeen || voice.MicOpen;
+        bool heard = voice.VoiceHeard;
+        bool speechOn = voice.SpeechReady;
+        string liveBefore = voice.LiveCaption;
+
+        // Soft-stop: keep speech callbacks so final words can still arrive.
         voice.EndListen();
+        ShowMicImpulse(false);
+        if (startButton != null) startButton.transform.localScale = Vector3.one;
+        if (captionText != null) captionText.text = "● Getting your words…";
+
         var wait = 0f;
-        while (wait < 0.8f && string.IsNullOrEmpty(voice.LastHeard))
+        while (wait < 2.5f && string.IsNullOrEmpty(voice.LastHeard) && string.IsNullOrEmpty(voice.LiveCaption))
         {
             wait += Time.deltaTime;
             yield return null;
         }
+        // One extra frame for pendingLive/pendingHeard to flush in Voice.Update.
+        yield return null;
+
         var typed = typeField != null ? typeField.text : "";
-        var text = string.IsNullOrEmpty(voice.LastHeard) ? typed : voice.LastHeard;
+        var live = !string.IsNullOrEmpty(voice.LiveCaption) ? voice.LiveCaption : liveBefore;
+        var text = !string.IsNullOrEmpty(voice.LastHeard)
+            ? voice.LastHeard
+            : (!string.IsNullOrEmpty(live) ? live : typed);
+
+        voice.DisposeListen();
+
         if (typeField != null) typeField.text = "";
+        if (string.IsNullOrEmpty(text))
+        {
+            string hint;
+            if (voice.UsesTypedInput)
+            {
+                if (heard)
+                    hint = "Mic works (bars moved). On PC type English in the box, then hold Start.";
+                else if (hadMic)
+                    hint = "Mic is ready. Type an English sentence in the box, then hold Start.";
+                else
+                    hint = "No mic found. Type English in the box, then hold Start.";
+            }
+            else if (!hadMic)
+                hint = "Cannot open the mic. Allow mic permission, or type.";
+            else if (!speechOn)
+                hint = "Mic works, but speech is off. Check mic permission, or type.";
+            else if (heard)
+                hint = "Heard sound, but no words yet. Speak clearer English, or type.";
+            else
+                hint = "No words yet. Hold Start, speak English, then release — or type.";
+            if (captionText != null)
+                captionText.text = hint;
+            if (animText != null) animText.text = AnimationName(lastPose);
+            if (typeField != null) typeField.ActivateInputField();
+            yield break;
+        }
+        if (captionText != null) captionText.text = "You: " + text;
         OnUserText(text);
     }
 
@@ -340,6 +609,7 @@ public class DragonApp : MonoBehaviour
     {
         text = (text ?? "").Trim();
         if (text.Length == 0) return;
+        if (TalkBlocked()) return;
         unanswered = 0;
         StopAsk();
         if (profile.caption) SetLine("You: " + text);
@@ -349,9 +619,13 @@ public class DragonApp : MonoBehaviour
             var before = profile.score - 3;
             profile.score = Mathf.Max(1, profile.score - 3);
             if (before < 0) profile.strength = Mathf.Max(0, profile.strength - 2);
-            var doubt = DoubtLines[badStreak % DoubtLines.Length];
-            if (badStreak >= 5) doubt = badStreak % 2 == 0 ? "Your English is not good." : "Your grammar is not good.";
-            Say(doubt, badStreak >= 5 ? "no" : "unsure");
+            // Never scold for a short hello-style line — coach a full sentence instead.
+            string doubt = GrammarCheck.Coach(text);
+            if (badStreak >= 10)
+                doubt = "Please try a full sentence, like: How are you?";
+            else if (badStreak >= 5)
+                doubt = DoubtLines[badStreak % DoubtLines.Length];
+            Say(doubt, "unsure");
             AfterChange();
             return;
         }
@@ -370,7 +644,11 @@ public class DragonApp : MonoBehaviour
         profile.talksToday++;
         profile.topScoreToday = Mathf.Max(profile.topScoreToday, profile.score);
         GrowByTalkCount(profile.talksToday);
-        if (!EnglishBank.Ready)
+        if (GrammarCheck.IsGreeting(text))
+        {
+            Say("Hello! Please ask me a question in English.", "wave");
+        }
+        else if (!EnglishBank.Ready)
         {
             Say(EnglishBank.Status, "unsure");
         }
@@ -499,6 +777,7 @@ public class DragonApp : MonoBehaviour
 
     void TouchCharacter()
     {
+        if (TalkBlocked()) return;
         touchStreak++;
         if (touchStreak >= 4) Say("I am angry. I do not want to talk to you.", "angry");
         else if (touchStreak >= 3) Say("Don't touch.", "no");

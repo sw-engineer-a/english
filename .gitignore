@@ -27,6 +27,7 @@ dist-ssr
 web/csv/**
 !web/csv/**/
 !web/csv/**/*.zip
+!web/csv/doctor/female/symptom-weights.csv
 web/scripts/_*.bundle.mjs
 web/csv/doctor/cancer/*
 
